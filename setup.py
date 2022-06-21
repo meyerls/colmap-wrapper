@@ -9,15 +9,15 @@ See LICENSE file for more information.
 # Built-in/Generic Imports
 import setuptools
 
-with open("Readme.md", 'r') as f:
-    long_description = f.read()
+#with open("Readme.md", 'r') as f:
+#    long_description = f.read()
 
 setuptools.setup(
     name='colmap',
     version='0.0.1',
     description='COLMAP Handler',
     license="MIT",
-    long_description=long_description,
+    long_description='',
     long_description_content_type="text/markdown",
     author='Lukas Meyer',
     author_email='lukas.meyer@fau.de',
