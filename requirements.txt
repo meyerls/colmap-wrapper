@@ -1,5 +1,5 @@
 numpy
-open3d==0.15.1
+open3d
 opencv-python==4.6.0.66
 pyquaternion==0.9.9
 matplotlib

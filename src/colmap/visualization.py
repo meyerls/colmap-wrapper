@@ -61,20 +61,30 @@ def text_3d(text, pos, direction=None, density=10, degree=0.0, font="arial.ttf",
     return pcd
 
 
-def create_sphere_mesh(t: np.ndarray, color: list, radius: float) -> o3d.pybind.geometry.TriangleMesh:
-    '''
+def create_sphere_mesh(t: np.ndarray, color: list, radius: float) -> list:
+    """
     Creates a sphere mesh, is translated to a parsed 3D coordinate and has uniform color
 
-    :param t: 3D Coordinate
-    :param color: rgb color ranging between 0 and 1.
-    :param radius: radius of the sphere
+    @param t: 3D Coordinate. Either 1 coordinate ore multiple
+    @param color: rgb color ranging between 0 and 1.
+    @param radius: radius of the sphere
     :return:
-    '''
-    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius)
-    sphere.translate(t)
-    sphere.paint_uniform_color(np.asarray(color))
+    """
+    # Only one point
+    if t.shape.__len__() == 1:
+        t = np.expand_dims(t, axis=0)
+        color = [color]
 
-    return sphere
+    sphere_list = []
+
+    for p, c in zip(t, color):
+        sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius)
+        sphere.translate(p)
+        sphere.paint_uniform_color(np.asarray(c))
+
+        sphere_list.append(sphere)
+
+    return sphere_list
 
 
 def generate_line_set(points: list, lines: list, color: list) -> o3d.pybind.geometry.LineSet:

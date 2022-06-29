@@ -10,16 +10,21 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Libs
 import pathlib as path
-from PIL import Image
+import PIL
 import cv2
+
+import open3d.visualization.gui as gui
+import open3d.visualization.rendering as rendering
 
 # Own modules
 try:
     from utils import *
     from visualization import *
+    from bin import *
 except ImportError:
     from .utils import *
     from .visualization import *
+    from .bin import *
 
 
 def load_image(image_path: str) -> np.ndarray:
@@ -30,11 +35,15 @@ def load_image(image_path: str) -> np.ndarray:
     :param image_path:
     :return:
     """
-    return np.asarray(Image.open(image_path))
+    return np.asarray(PIL.Image.open(image_path))
 
 
 class COLMAP:
-    def __init__(self, project_path: str, dense_pc: str = 'fused.ply', load_images: bool = False, resize: float = 1.):
+    def __init__(self, project_path: str,
+                 dense_pc: str = 'fused.ply',
+                 load_images: bool = False,
+                 resize: float = 1.,
+                 bg_color: np.ndarray = np.asarray([0.5, 0.5, 0.5])):
         '''
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
@@ -92,6 +101,8 @@ class COLMAP:
 
         self.resize = resize
         self.__add_infos()
+
+        self.vis_bg_color = bg_color
 
     def __add_infos(self):
         for image_idx in self.images.keys():
@@ -154,23 +165,64 @@ class COLMAP:
 
             geometries.append(mesh)
             geometries.append(line_set)
-            geometries.append(sphere)
+            geometries.extend(sphere)
 
+        vis = Visualizer()
+        vis.run()
+
+        #self.start_visualizer(geometries=geometries, point_size=point_size)
+
+    def start_visualizer(self, geometries: list,
+                         point_size: float,
+                         title: str = "Open3D Visualizer",
+                         size: tuple = (1920, 1080)):
         viewer = o3d.visualization.Visualizer()
+        viewer.create_window(window_name=title, width=size[0], height=size[1])
 
-        viewer.create_window()
         for geometry in geometries:
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
         opt.show_coordinate_frame = True
         opt.point_size = point_size
-        opt.background_color = np.asarray([0.5, 0.5, 0.5])
+        opt.background_color = self.vis_bg_color
         viewer.run()
         viewer.destroy_window()
 
 
+class AppWindow:
+    MENU_OPEN = 1
+    MENU_EXPORT = 2
+    MENU_QUIT = 3
+    MENU_COLMAP = 4
+    MENU_SHOW_SETTINGS = 11
+    MENU_ABOUT = 21
+
+    DEFAULT_IBL = "default"
+
+    MATERIAL_NAMES = ["Lit", "Unlit", "Normals", "Depth"]
+
+    def __init__(self, width, height):
+        self.window = gui.Application.instance.create_window(
+            "Open3D", width, height)
+        w = self.window  # to make the code more concise
+
+        # 3D widget
+        self._scene = gui.SceneWidget()
+        self._scene.scene = rendering.Open3DScene(w.renderer)
+
+
+class Visualizer(object):
+    def __init__(self):
+        gui.Application.instance.initialize()
+
+        w = AppWindow(1024, 768)
+
+    def run(self):
+        gui.Application.instance.run()
+
+
 if __name__ == '__main__':
-    project = COLMAP(project_path='data', load_images=True, resize=0.4)
+    project = COLMAP(project_path='data/door', load_images=True, resize=0.4)
 
     camera = project.cameras
     images = project.images

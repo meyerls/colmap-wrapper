@@ -15,8 +15,10 @@ import open3d as o3d
 import pathlib as path
 
 # Own
-from image import *
-
+try:
+    from image import *
+except ModuleNotFoundError:
+    from .image import *
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     """Read and unpack the next bytes from a binary file.
@@ -30,6 +32,31 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     # Struct unpack return tuple (https://docs.python.org/3/library/struct.html)
     return struct.unpack(endian_character + format_char_sequence, data)
 
+def write_cameras_binary(a):
+    """
+    void Reconstruction::WriteCamerasBinary(const std::string& path) const {
+      std::ofstream file(path, std::ios::trunc | std::ios::binary);
+      CHECK(file.is_open()) << path;
+
+      WriteBinaryLittleEndian<uint64_t>(&file, cameras_.size());
+
+      for (const auto& camera : cameras_) {
+        WriteBinaryLittleEndian<camera_t>(&file, camera.first);
+        WriteBinaryLittleEndian<int>(&file, camera.second.ModelId());
+        WriteBinaryLittleEndian<uint64_t>(&file, camera.second.Width());
+        WriteBinaryLittleEndian<uint64_t>(&file, camera.second.Height());
+        for (const double param : camera.second.Params()) {
+          WriteBinaryLittleEndian<double>(&file, param);
+        }
+      }
+    }
+
+    @param a:
+    @param b:
+    @return:
+    """
+    pass
+    return
 
 def read_cameras_binary(path_to_model_file):
     """

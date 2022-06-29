@@ -17,7 +17,10 @@ import pathlib as path
 import PIL
 
 # Own modules
-from utils import *
+try:
+    from utils import *
+except ModuleNotFoundError:
+    from .utils import *
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
 Camera = collections.namedtuple("Camera", ["id", "model", "width", "height", "params"])
@@ -69,6 +72,10 @@ class Image():
             self.__image = load_image(self.image_path)
 
         return self.__image
+
+    @image.setter
+    def image(self, image: np.ndarray):
+        self.__image = image
 
     def qvec2rotmat(self):
         return qvec2rotmat(self.qvec)

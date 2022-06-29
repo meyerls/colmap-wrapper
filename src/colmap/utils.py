@@ -55,17 +55,6 @@ def convert_colmap_extrinsics(frame):
     return Rwc, twc, M
 
 
-def convert_colmap_extrinsics_scaled(frame, scale_factor):
-    Rwc = frame.Rwc()
-    twc = frame.twc() * scale_factor
-
-    M = np.eye(4)
-    M[:3, :3] = Rwc
-    M[:3, 3] = twc
-
-    return Rwc, twc, M
-
-
 def generate_colmap_sparse_pc(points3D):
     sparse_pc = np.zeros((points3D.__len__(), 3))
     sparse_pc_color = np.zeros((points3D.__len__(), 3))
