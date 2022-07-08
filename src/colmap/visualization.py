@@ -21,6 +21,27 @@ from pyquaternion import Quaternion
 # ...
 
 
+'''
+# Plot/show text of distance in 3 Reco. Currently not working as text is rotated wrongly. tbd!
+
+pos_text = (self.aruco_corners_3d[0] + (
+            self.aruco_corners_3d[1] - self.aruco_corners_3d[0]) / 2) * self.scale_factor
+pcd_tree = o3d.geometry.KDTreeFlann(self.dense_scaled)
+[k, idx, _] = pcd_tree.search_knn_vector_3d(pos_text, 100)
+
+dir_vec = []
+for i in idx:
+    dir_vec.append(self.dense_scaled.normals[i])
+dir_vec = np.asarray(dir_vec).mean(axis=0)
+
+dist = np.linalg.norm(
+    self.aruco_corners_3d[0] * self.scale_factor - self.aruco_corners_3d[1] * self.scale_factor)
+pcd_text = text_3d(text='{:.4f} cm'.format(dist*100),
+                   pos=pos_text,
+                   direction=dir_vec)
+geometries.append(pcd_text)
+
+'''
 def text_3d(text, pos, direction=None, density=10, degree=0.0, font="arial.ttf", font_size=16):
     """
     Source: https://github.com/isl-org/Open3D/issues/2

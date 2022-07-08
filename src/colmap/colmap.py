@@ -9,15 +9,9 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 import os
 
 # Libs
-import pathlib as path
-import PIL
-import cv2
-
-import open3d as o3d
-import open3d.visualization.gui as gui
-import open3d.visualization.rendering as rendering
 
 # Own modules
+
 try:
     from utils import *
     from visualization import *
@@ -44,7 +38,7 @@ class COLMAP:
                  dense_pc: str = 'fused.ply',
                  load_images: bool = False,
                  resize: float = 1.,
-                 bg_color: np.ndarray = np.asarray([0.5, 0.5, 0.5])):
+                 bg_color: np.ndarray = np.asarray([1, 1, 1])):
         '''
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
@@ -105,16 +99,16 @@ class COLMAP:
             self.__fused_path = self.__project_path.joinpath('dense').joinpath('0').joinpath(dense_pc)
 
         self.__load_images = load_images
+        self.geometries = None
+        self.resize = resize
+        self.vis_bg_color = bg_color
 
         self.__read_cameras()
         self.__read_images()
         self.__read_sparse_model()
         self.__read_dense_model()
 
-        self.resize = resize
         self.__add_infos()
-
-        self.vis_bg_color = bg_color
 
     def __add_infos(self):
         for image_idx in self.images.keys():
@@ -128,6 +122,9 @@ class COLMAP:
                 self.images[image_idx].image = image
             else:
                 self.images[image_idx].image = None
+
+            self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
+            self.images[image_idx].extrinsics = convert_colmap_extrinsics(self.images[image_idx])[-1]
 
     def __read_cameras(self):
         self.cameras = read_cameras_binary(self.__camera_path)
@@ -145,15 +142,28 @@ class COLMAP:
         return generate_colmap_sparse_pc(self.sparse)
 
     def show_sparse(self):
-        sparse = self.get_sparse()
-        o3d.visualization.draw_geometries([sparse])
+        o3d.visualization.draw_geometries([self.get_sparse()])
 
     def get_dense(self):
         return self.dense
 
     def show_dense(self):
-        dense = self.get_dense()
-        o3d.visualization.draw_geometries([dense])
+        o3d.visualization.draw_geometries([self.get_dense()])
+
+    def add_colmap_reconstruction_geometries(self, frustum_scale: float = 1., ):
+        geometries = [self.get_dense()]
+
+        for image_idx in self.images.keys():
+            line_set, sphere, mesh = draw_camera_viewport(extrinsics=self.images[image_idx].extrinsics,
+                                                          intrinsics=self.images[image_idx].intrinsics.K,
+                                                          image=self.images[image_idx].image,
+                                                          scale=frustum_scale)
+
+            geometries.append(mesh)
+            geometries.append(line_set)
+            geometries.extend(sphere)
+
+        self.geometries = geometries
 
     def visualization(self, frustum_scale: float = 1., point_size: float = 1.):
         """
@@ -163,33 +173,17 @@ class COLMAP:
         :return:
         """
 
-        geometries = [self.get_dense()]
+        self.add_colmap_reconstruction_geometries(frustum_scale)
+        self.start_visualizer(point_size=point_size)
 
-        for image_idx in self.images.keys():
-            camera_intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
-
-            Rwc, twc, M = convert_colmap_extrinsics(frame=self.images[image_idx])
-
-            line_set, sphere, mesh = draw_camera_viewport(extrinsics=M,
-                                                          intrinsics=camera_intrinsics.K,
-                                                          image=self.images[image_idx].image,
-                                                          scale=frustum_scale)
-
-            geometries.append(mesh)
-            geometries.append(line_set)
-            geometries.extend(sphere)
-
-        self.geometries = geometries
-        self.start_visualizer(geometries=geometries, point_size=point_size)
-
-    def start_visualizer(self, geometries: list,
+    def start_visualizer(self,
                          point_size: float,
                          title: str = "Open3D Visualizer",
                          size: tuple = (1920, 1080)):
         viewer = o3d.visualization.Visualizer()
         viewer.create_window(window_name=title, width=size[0], height=size[1])
 
-        for geometry in geometries:
+        for geometry in self.geometries:
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
         opt.show_coordinate_frame = True
@@ -208,4 +202,3 @@ if __name__ == '__main__':
     dense = project.get_dense()
 
     project.visualization()
-

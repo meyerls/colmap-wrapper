@@ -53,7 +53,7 @@ def load_image(image_path: str) -> np.ndarray:
     return np.asarray(PIL.Image.open(image_path))
 
 
-class Image():
+class Image(object):
     def __init__(self, image_id, qvec, tvec, camera_id, name, image_path, xys, point3D_ids, point3DiD_to_kpidx):
         self.id = image_id
         self.qvec = qvec
