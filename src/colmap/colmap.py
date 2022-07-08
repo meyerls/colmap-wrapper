@@ -6,7 +6,7 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 """
 
 # Built-in/Generic Imports
-# ...
+import os
 
 # Libs
 import pathlib as path
@@ -83,15 +83,26 @@ class COLMAP:
         :param image_path:
         '''
         self.__project_path = path.Path(project_path)
+
         self.__src_image_path = self.__project_path.joinpath('images')
+        if not os.path.exists(self.__src_image_path):
+            self.__src_image_path = self.__project_path.joinpath('dense').joinpath('0').joinpath('images')
         self.__sparse_base_path = self.__project_path.joinpath('sparse')
         if not self.__sparse_base_path.exists():
             raise ValueError('Colmap project structure: sparse folder (cameras, images, points3d) can not be found')
 
         self.__camera_path = self.__sparse_base_path.joinpath('cameras.bin')
+        if not os.path.exists(self.__camera_path):
+            self.__camera_path = self.__sparse_base_path.joinpath('0').joinpath('cameras.bin')
         self.__image_path = self.__sparse_base_path.joinpath('images.bin')
+        if not os.path.exists(self.__image_path):
+            self.__image_path = self.__sparse_base_path.joinpath('0').joinpath('images.bin')
         self.__points3D_path = self.__sparse_base_path.joinpath('points3D.bin')
+        if not os.path.exists(self.__points3D_path):
+            self.__points3D_path = self.__sparse_base_path.joinpath('0').joinpath('points3D.bin')
         self.__fused_path = self.__project_path.joinpath(dense_pc)
+        if not os.path.exists(self.__fused_path):
+            self.__fused_path = self.__project_path.joinpath('dense').joinpath('0').joinpath(dense_pc)
 
         self.__load_images = load_images
 

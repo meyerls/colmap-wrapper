@@ -11,6 +11,7 @@ import struct
 import collections
 
 # Libs
+import cv2
 import numpy as np
 import open3d as o3d
 import pathlib as path
@@ -66,10 +67,14 @@ class Image():
 
         self.__image = None
 
+        self.downsample = 0.3
+
     @property
     def image(self):
         if self.__image is None:
-            self.__image = load_image(self.image_path)
+            img = load_image(self.image_path)
+            self.__image = cv2.resize(img, (0, 0), fx=self.downsample, fy=self.downsample)
+            del img
 
         return self.__image
 

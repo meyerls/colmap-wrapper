@@ -81,6 +81,7 @@ def create_sphere_mesh(t: np.ndarray, color: list, radius: float) -> list:
         sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius)
         sphere.translate(p)
         sphere.paint_uniform_color(np.asarray(c))
+        sphere.compute_triangle_normals()
 
         sphere_list.append(sphere)
 
@@ -184,21 +185,26 @@ def draw_camera_viewport(extrinsics: np.ndarray, intrinsics: np.ndarray, image=N
         # Create Point Cloud and assign a normal vector pointing in the opposite direction of the viewing normal
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np.asarray(points[1:]))
-        normal_vec = - (np.asarray([0, 0, 1]) @ R.T)
+        normal_vec = - (np.asarray([0, 0, fx]) @ R.T)
         pcd.normals = o3d.utility.Vector3dVector(np.tile(normal_vec, (pcd.points.__len__(), 1)))
 
         # Create image plane with image as texture
         plane = o3d.geometry.TriangleMesh()
         plane.vertices = pcd.points
-        plane.triangles = o3d.utility.Vector3iVector(np.asarray([[0, 1, 3], [1, 2, 3]]))
+        plane.triangles = o3d.utility.Vector3iVector(np.asarray([[0, 1, 3],
+                                                                 [1, 2, 3]]))
         plane.compute_vertex_normals()
-        v_uv = np.asarray([[1, 1], [1, 0], [0, 1], [1, 0], [0, 0], [0, 1]])
+        v_uv = np.asarray([[1, 1],
+                           [1, 0],
+                           [0, 1],
+                           [1, 0],
+                           [0, 0],
+                           [0, 1]])
         plane.triangle_uvs = o3d.utility.Vector2dVector(v_uv)
         plane.triangle_material_ids = o3d.utility.IntVector([0] * 2)
-        plane.textures = [o3d.geometry.Image(cv2.resize(image, (0, 0), fx=0.4, fy=0.4))]
-
-        # mesh = draw_image2camera_mesh(extrinsics=extrinsics, intrinsics=intrinsics, image=image, scale=scale)
+        plane.textures = [o3d.geometry.Image(image)]
     else:
         plane = o3d.geometry.TriangleMesh()
+        print('Blank')
 
     return line_set, sphere, plane

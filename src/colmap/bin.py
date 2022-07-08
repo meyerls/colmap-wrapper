@@ -16,9 +16,9 @@ import pathlib as path
 
 # Own
 try:
-    from image import *
+    from camera import *
 except ModuleNotFoundError:
-    from .image import *
+    from .camera import *
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     """Read and unpack the next bytes from a binary file.
