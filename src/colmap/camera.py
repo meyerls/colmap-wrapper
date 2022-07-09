@@ -7,15 +7,11 @@ See LICENSE file for more information.
 """
 
 # Built-in/Generic Imports
-import struct
 import collections
 
+import PIL
 # Libs
 import cv2
-import numpy as np
-import open3d as o3d
-import pathlib as path
-import PIL
 
 # Own modules
 try:
@@ -81,6 +77,17 @@ class Image(object):
     @image.setter
     def image(self, image: np.ndarray):
         self.__image = image
+
+    @property
+    def extrinsics(self):
+        Rwc = self.Rwc()
+        twc = self.twc()
+
+        M = np.eye(4)
+        M[:3, :3] = Rwc
+        M[:3, 3] = twc
+
+        return M
 
     def qvec2rotmat(self):
         return qvec2rotmat(self.qvec)

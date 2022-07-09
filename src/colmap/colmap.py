@@ -124,7 +124,6 @@ class COLMAP:
                 self.images[image_idx].image = None
 
             self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
-            self.images[image_idx].extrinsics = convert_colmap_extrinsics(self.images[image_idx])[-1]
 
     def __read_cameras(self):
         self.cameras = read_cameras_binary(self.__camera_path)
@@ -176,6 +175,23 @@ class COLMAP:
         self.add_colmap_reconstruction_geometries(frustum_scale)
         self.start_visualizer(point_size=point_size)
 
+    def start_visualizer_scaled(self,
+                                geometries,
+                                point_size: float,
+                                title: str = "Open3D Visualizer",
+                                size: tuple = (1920, 1080)):
+        viewer = o3d.visualization.Visualizer()
+        viewer.create_window(window_name=title, width=size[0], height=size[1])
+
+        for geometry in geometries:
+            viewer.add_geometry(geometry)
+        opt = viewer.get_render_option()
+        #opt.show_coordinate_frame = True
+        opt.point_size = point_size
+        opt.background_color = self.vis_bg_color
+        viewer.run()
+        viewer.destroy_window()
+
     def start_visualizer(self,
                          point_size: float,
                          title: str = "Open3D Visualizer",
@@ -186,7 +202,7 @@ class COLMAP:
         for geometry in self.geometries:
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
-        opt.show_coordinate_frame = True
+        #opt.show_coordinate_frame = True
         opt.point_size = point_size
         opt.background_color = self.vis_bg_color
         viewer.run()
