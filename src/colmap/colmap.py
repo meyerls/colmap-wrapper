@@ -98,22 +98,25 @@ class COLMAP:
         if not os.path.exists(self.__fused_path):
             self.__fused_path = self.__project_path.joinpath('dense').joinpath('0').joinpath(dense_pc)
 
-        self.__load_images = load_images
+        self.load_images = load_images
+
+        self.read()
+
         self.geometries = None
         self.resize = resize
         self.vis_bg_color = bg_color
 
+    def read(self):
         self.__read_cameras()
         self.__read_images()
         self.__read_sparse_model()
         self.__read_dense_model()
-
         self.__add_infos()
 
     def __add_infos(self):
         for image_idx in self.images.keys():
             self.images[image_idx].path = self.__src_image_path / self.images[image_idx].name
-            if self.__load_images:
+            if self.load_images:
                 image = load_image(self.images[image_idx].path)
 
                 if self.resize != 1.:
@@ -150,7 +153,7 @@ class COLMAP:
         o3d.visualization.draw_geometries([self.get_dense()])
 
     def add_colmap_reconstruction_geometries(self, frustum_scale: float = 1., ):
-        geometries = [self.get_dense()]
+        geometries = [self.get_dense(), self.get_sparse()]
 
         for image_idx in self.images.keys():
             line_set, sphere, mesh = draw_camera_viewport(extrinsics=self.images[image_idx].extrinsics,
@@ -186,7 +189,7 @@ class COLMAP:
         for geometry in geometries:
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
-        #opt.show_coordinate_frame = True
+        # opt.show_coordinate_frame = True
         opt.point_size = point_size
         opt.background_color = self.vis_bg_color
         viewer.run()
@@ -202,11 +205,14 @@ class COLMAP:
         for geometry in self.geometries:
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
-        #opt.show_coordinate_frame = True
+        # opt.show_coordinate_frame = True
         opt.point_size = point_size
         opt.background_color = self.vis_bg_color
         viewer.run()
         viewer.destroy_window()
+
+    def write(self, data):
+        pass
 
 
 if __name__ == '__main__':

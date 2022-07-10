@@ -140,7 +140,7 @@ def read_images_binary(path_to_model_file):
                                      qvec=qvec,
                                      tvec=tvec,
                                      camera_id=camera_id,
-                                     name=image_name,
+                                     image_name=image_name,
                                      image_path=(path_to_model_file / '..' / '..' / 'images' / image_name).resolve(),
                                      xys=xys,
                                      point3D_ids=point3D_ids,
@@ -180,7 +180,7 @@ def read_points3d_binary(path_to_model_file):
             image_ids = np.array(tuple(map(int, track_elems[0::2])))
             point2D_idxs = np.array(tuple(map(int, track_elems[1::2])))
             points3D[point3D_id] = Point3D(
-                id=point3D_id, xyz=xyz, rgb=rgb,
+                point_id=point3D_id, xyz=xyz, rgb=rgb,
                 error=error, image_ids=image_ids,
                 point2D_idxs=point2D_idxs)
     return points3D

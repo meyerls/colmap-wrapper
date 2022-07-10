@@ -8,10 +8,11 @@ See LICENSE file for more information.
 
 # Built-in/Generic Imports
 import collections
+import pathlib
 
-import PIL
 # Libs
 import cv2
+import PIL
 
 # Own modules
 try:
@@ -21,7 +22,7 @@ except ModuleNotFoundError:
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
 Camera = collections.namedtuple("Camera", ["id", "model", "width", "height", "params"])
-Point3D = collections.namedtuple("Point3D", ["id", "xyz", "rgb", "error", "image_ids", "point2D_idxs"])
+
 CAMERA_MODELS = {
     CameraModel(model_id=0, model_name="SIMPLE_PINHOLE", num_params=3),
     CameraModel(model_id=1, model_name="PINHOLE", num_params=4),
@@ -49,24 +50,63 @@ def load_image(image_path: str) -> np.ndarray:
     return np.asarray(PIL.Image.open(image_path))
 
 
+class Point3D:
+    def __init__(self,
+                 point_id: int,
+                 xyz: np.ndarray,
+                 rgb: np.ndarray,
+                 error: float,
+                 image_ids: np.ndarray,
+                 point2D_idxs: np.ndarray):
+        self.id = point_id
+        self.xyz = xyz
+        self.rgb = rgb
+        self.error = error
+        self.image_ids = image_ids
+        self.point2D_idxs = point2D_idxs
+
+
 class Image(object):
-    def __init__(self, image_id, qvec, tvec, camera_id, name, image_path, xys, point3D_ids, point3DiD_to_kpidx):
+    def __init__(self,
+                 image_id: int,
+                 qvec: np.ndarray,
+                 tvec: np.ndarray,
+                 camera_id: int,
+                 image_name: str,
+                 image_path: pathlib.PosixPath,
+                 xys: np.ndarray,
+                 point3D_ids: np.ndarray,
+                 point3DiD_to_kpidx: dict):
+        """
+        @param image_id: number of image
+        @param qvec: quaternion of the camera viewing direction
+        @param tvec: translation of the image/camera position
+        @param camera_id: camera id
+        @param image_name: name of th image
+        @param image_path: path to the image
+        @param xys:
+        @param point3D_ids:
+        @param point3DiD_to_kpidx:
+
+        """
+        # Parsed arguments
         self.id = image_id
         self.qvec = qvec
         self.tvec = tvec
         self.camera_id = camera_id
-        self.name = name
+        self.name = image_name
         self.image_path = image_path
         self.xys = xys
         self.point3D_ids = point3D_ids
         self.point3DiD_to_kpidx = point3DiD_to_kpidx
 
+        self.downsample = 0.3
+        self.intrinsics = None
+
         self.__image = None
 
-        self.downsample = 0.3
-
     @property
-    def image(self):
+    def image(self) -> np.ndarray:
         if self.__image is None:
             img = load_image(self.image_path)
             self.__image = cv2.resize(img, (0, 0), fx=self.downsample, fy=self.downsample)
@@ -79,7 +119,7 @@ class Image(object):
         self.__image = image
 
     @property
-    def extrinsics(self):
+    def extrinsics(self) -> np.ndarray:
         Rwc = self.Rwc()
         twc = self.twc()
 
