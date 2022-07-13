@@ -20,6 +20,7 @@ try:
 except ModuleNotFoundError:
     from .camera import *
 
+
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     """Read and unpack the next bytes from a binary file.
     :param fid:
@@ -31,6 +32,7 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     data = fid.read(num_bytes)
     # Struct unpack return tuple (https://docs.python.org/3/library/struct.html)
     return struct.unpack(endian_character + format_char_sequence, data)
+
 
 def write_cameras_binary(a):
     """
@@ -57,6 +59,7 @@ def write_cameras_binary(a):
     """
     pass
     return
+
 
 def read_cameras_binary(path_to_model_file):
     """
@@ -148,6 +151,52 @@ def read_images_binary(path_to_model_file):
     return images
 
 
+def read_images_text(path):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadImagesText(const std::string& path)
+        void Reconstruction::WriteImagesText(const std::string& path)
+    """
+    images = {}
+    with open(path, "r") as fid:
+        while True:
+            line = fid.readline()
+            if not line:
+                break
+            line = line.strip()
+            if len(line) > 0 and line[0] != "#":
+                elems = line.split()
+                image_id = int(elems[0])
+                qvec = np.array(tuple(map(float, elems[1:5])))
+                tvec = np.array(tuple(map(float, elems[5:8])))
+                camera_id = int(elems[8])
+                image_name = elems[9]
+                elems = fid.readline().split()
+                xys = np.column_stack([tuple(map(float, elems[0::3])),
+                                       tuple(map(float, elems[1::3]))])
+                point3D_ids = np.array(tuple(map(int, elems[2::3])))
+
+                pt3did_to_kpidx = {}
+                for kpidx, ptid in enumerate(point3D_ids.ravel().tolist()):
+                    if ptid != -1:
+                        if ptid in pt3did_to_kpidx:
+                            # print("3D point {} already exits in {}, skip".format(
+                            # ptid, image_name))
+                            continue
+                        pt3did_to_kpidx[ptid] = kpidx
+
+                images[image_id] = Image(image_id=image_id,
+                                         qvec=qvec,
+                                         tvec=tvec,
+                                         camera_id=camera_id,
+                                         image_name=image_name,
+                                         image_path=(path / '..' / '..' / 'images' / image_name).resolve(),
+                                         xys=xys,
+                                         point3D_ids=point3D_ids,
+                                         point3DiD_to_kpidx=pt3did_to_kpidx)
+    return images
+
+
 def read_points3d_binary(path_to_model_file):
     """
     Original C++ Code can be found here: https://github.com/colmap/colmap/blob/dev/src/base/reconstruction.cc
@@ -186,6 +235,32 @@ def read_points3d_binary(path_to_model_file):
     return points3D
 
 
+def read_points3D_text(path):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadPoints3DText(const std::string& path)
+        void Reconstruction::WritePoints3DText(const std::string& path)
+    """
+    points3D = {}
+    with open(path, "r") as fid:
+        while True:
+            line = fid.readline()
+            if not line:
+                break
+            line = line.strip()
+            if len(line) > 0 and line[0] != "#":
+                elems = line.split()
+                point3D_id = int(elems[0])
+                xyz = np.array(tuple(map(float, elems[1:4])))
+                rgb = np.array(tuple(map(int, elems[4:7])))
+                error = float(elems[7])
+                image_ids = np.array(tuple(map(int, elems[8::2])))
+                point2D_idxs = np.array(tuple(map(int, elems[9::2])))
+                points3D[point3D_id] = Point3D(point_id=point3D_id, xyz=xyz, rgb=rgb,
+                                               error=error, image_ids=image_ids,
+                                               point2D_idxs=point2D_idxs)
+    return points3D
+
 
 # ToDo: Image reader
 
@@ -210,6 +285,36 @@ def read_reconstruction_data(base_path):
     images = read_images_binary(image_path)
 
     return cameras, images, points3D
+
+
+def read_cameras_text(path, int_id=True):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::WriteCamerasText(const std::string& path)
+        void Reconstruction::ReadCamerasText(const std::string& path)
+    """
+    cameras = {}
+    with open(path, "r") as fid:
+        while True:
+            line = fid.readline()
+            if not line:
+                break
+            line = line.strip()
+            if len(line) > 0 and line[0] != "#":
+                elems = line.split()
+                if int_id:
+                    camera_id = int(elems[0])
+                else:
+                    camera_id = elems[0]
+                model = elems[1]
+                width = int(elems[2])
+                height = int(elems[3])
+                params = np.array(tuple(map(float, elems[4:])))
+                cameras[camera_id] = Camera(id=camera_id, model=model,
+                                            width=width, height=height,
+                                            params=params)
+    return cameras
+
 
 
 if __name__ == '__main__':

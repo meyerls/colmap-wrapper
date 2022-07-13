@@ -76,35 +76,43 @@ class COLMAP:
         :param project_path:
         :param image_path:
         '''
-        self.__project_path = path.Path(project_path)
+        self._project_path = path.Path(project_path)
 
-        self.__src_image_path = self.__project_path.joinpath('images')
-        if not os.path.exists(self.__src_image_path):
-            self.__src_image_path = self.__project_path.joinpath('dense').joinpath('0').joinpath('images')
-        self.__sparse_base_path = self.__project_path.joinpath('sparse')
-        if not self.__sparse_base_path.exists():
+        self._src_image_path = self._project_path.joinpath('images')
+        if not os.path.exists(self._src_image_path):
+            self._src_image_path = self._project_path.joinpath('dense').joinpath('0').joinpath('images')
+        self._sparse_base_path = self._project_path.joinpath('sparse')
+        if not self._sparse_base_path.exists():
             raise ValueError('Colmap project structure: sparse folder (cameras, images, points3d) can not be found')
 
-        self.__camera_path = self.__sparse_base_path.joinpath('cameras.bin')
-        if not os.path.exists(self.__camera_path):
-            self.__camera_path = self.__sparse_base_path.joinpath('0').joinpath('cameras.bin')
-        self.__image_path = self.__sparse_base_path.joinpath('images.bin')
-        if not os.path.exists(self.__image_path):
-            self.__image_path = self.__sparse_base_path.joinpath('0').joinpath('images.bin')
-        self.__points3D_path = self.__sparse_base_path.joinpath('points3D.bin')
-        if not os.path.exists(self.__points3D_path):
-            self.__points3D_path = self.__sparse_base_path.joinpath('0').joinpath('points3D.bin')
-        self.__fused_path = self.__project_path.joinpath(dense_pc)
-        if not os.path.exists(self.__fused_path):
-            self.__fused_path = self.__project_path.joinpath('dense').joinpath('0').joinpath(dense_pc)
+        if os.path.exists(self._sparse_base_path.joinpath('0')):
+            self._sparse_base_path = self._sparse_base_path.joinpath('0')
+
+        files = []
+        types = ('*.txt', '*.bin')
+        for t in types:
+            files.extend(self._sparse_base_path.glob(t))
+
+        for file_path in files:
+            if 'cameras' in file_path.name:
+                self._camera_path = file_path
+            elif 'images' in file_path.name:
+                self._image_path = file_path
+            elif 'points3D' in file_path.name:
+                self._points3D_path = file_path
+            else:
+                raise ValueError('Unkown file in sparse folder')
+
+        self._fused_path = self._project_path.joinpath(dense_pc)
+        if not os.path.exists(self._fused_path):
+            self._fused_path = self._project_path.joinpath('dense').joinpath('0').joinpath(dense_pc)
 
         self.load_images = load_images
-
-        self.read()
-
         self.geometries = None
         self.resize = resize
         self.vis_bg_color = bg_color
+
+        self.read()
 
     def read(self):
         self.__read_cameras()
@@ -115,7 +123,7 @@ class COLMAP:
 
     def __add_infos(self):
         for image_idx in self.images.keys():
-            self.images[image_idx].path = self.__src_image_path / self.images[image_idx].name
+            self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
             if self.load_images:
                 image = load_image(self.images[image_idx].path)
 
@@ -129,16 +137,31 @@ class COLMAP:
             self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
 
     def __read_cameras(self):
-        self.cameras = read_cameras_binary(self.__camera_path)
+        if self._camera_path.suffix == '.txt':
+            self.cameras = read_cameras_text(self._camera_path)
+        elif self._camera_path.suffix == '.bin':
+            self.cameras = read_cameras_binary(self._camera_path)
+        else:
+            raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_images(self):
-        self.images = read_images_binary(self.__image_path)
+        if self._image_path.suffix == '.txt':
+            self.images  = read_images_text(self._image_path)
+        elif self._image_path.suffix == '.bin':
+            self.images = read_images_binary(self._image_path)
+        else:
+            raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_sparse_model(self):
-        self.sparse = read_points3d_binary(self.__points3D_path)
+        if self._points3D_path.suffix == '.txt':
+            self.sparse = read_points3D_text(self._points3D_path)
+        elif self._points3D_path.suffix == '.bin':
+            self.sparse = read_points3d_binary(self._points3D_path)
+        else:
+            raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_dense_model(self):
-        self.dense = o3d.io.read_point_cloud(self.__fused_path.__str__())
+        self.dense = o3d.io.read_point_cloud(self._fused_path.__str__())
 
     def get_sparse(self):
         return generate_colmap_sparse_pc(self.sparse)
