@@ -13,6 +13,7 @@ See LICENSE file for more information.
 import numpy as np
 import open3d as o3d
 
+
 # Own modules
 # ...
 
@@ -55,7 +56,7 @@ def convert_colmap_extrinsics(frame):
     return Rwc, twc, M
 
 
-def generate_colmap_sparse_pc(points3D):
+def generate_colmap_sparse_pc(points3D: np.ndarray) -> o3d.pybind.geometry.PointCloud:
     sparse_pc = np.zeros((points3D.__len__(), 3))
     sparse_pc_color = np.zeros((points3D.__len__(), 3))
 

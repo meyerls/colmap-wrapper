@@ -73,7 +73,6 @@ class Image(object):
                  tvec: np.ndarray,
                  camera_id: int,
                  image_name: str,
-                 image_path: pathlib.PosixPath,
                  xys: np.ndarray,
                  point3D_ids: np.ndarray,
                  point3DiD_to_kpidx: dict):
@@ -95,7 +94,6 @@ class Image(object):
         self.tvec = tvec
         self.camera_id = camera_id
         self.name = image_name
-        self.image_path = image_path
         self.xys = xys
         self.point3D_ids = point3D_ids
         self.point3DiD_to_kpidx = point3DiD_to_kpidx
@@ -103,12 +101,14 @@ class Image(object):
         self.downsample = 0.3
         self.intrinsics = None
 
+        self.path = None
+
         self.__image = None
 
     @property
     def image(self) -> np.ndarray:
         if self.__image is None:
-            img = load_image(self.image_path)
+            img = load_image(self.path)
             self.__image = cv2.resize(img, (0, 0), fx=self.downsample, fy=self.downsample)
             del img
 

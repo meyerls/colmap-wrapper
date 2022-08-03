@@ -42,6 +42,8 @@ pcd_text = text_3d(text='{:.4f} cm'.format(dist*100),
 geometries.append(pcd_text)
 
 '''
+
+
 def text_3d(text, pos, direction=None, density=10, degree=0.0, font="arial.ttf", font_size=16):
     """
     Source: https://github.com/isl-org/Open3D/issues/2

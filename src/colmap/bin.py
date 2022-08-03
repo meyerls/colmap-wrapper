@@ -144,7 +144,6 @@ def read_images_binary(path_to_model_file):
                                      tvec=tvec,
                                      camera_id=camera_id,
                                      image_name=image_name,
-                                     image_path=(path_to_model_file / '..' / '..' / 'images' / image_name).resolve(),
                                      xys=xys,
                                      point3D_ids=point3D_ids,
                                      point3DiD_to_kpidx=pt3did_to_kpidx)
@@ -190,7 +189,6 @@ def read_images_text(path):
                                          tvec=tvec,
                                          camera_id=camera_id,
                                          image_name=image_name,
-                                         image_path=(path / '..' / '..' / 'images' / image_name).resolve(),
                                          xys=xys,
                                          point3D_ids=point3D_ids,
                                          point3DiD_to_kpidx=pt3did_to_kpidx)
@@ -315,6 +313,22 @@ def read_cameras_text(path, int_id=True):
                                             params=params)
     return cameras
 
+def read_array(path):
+    with open(path, "rb") as fid:
+        width, height, channels = np.genfromtxt(fid, delimiter="&", max_rows=1,
+                                                usecols=(0, 1, 2), dtype=int)
+        fid.seek(0)
+        num_delimiter = 0
+        byte = fid.read(1)
+        while True:
+            if byte == b"&":
+                num_delimiter += 1
+                if num_delimiter >= 3:
+                    break
+            byte = fid.read(1)
+        array = np.fromfile(fid, np.float32)
+    array = array.reshape((width, height, channels), order="F")
+    return np.transpose(array, (1, 0, 2)).squeeze()
 
 
 if __name__ == '__main__':
