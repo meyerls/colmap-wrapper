@@ -14,7 +14,7 @@ import setuptools
 
 setuptools.setup(
     name='colmap_wrapper',
-    version='1.1.0',
+    version='1.1.1',
     description='COLMAP Handler',
     license="MIT",
     long_description='',
