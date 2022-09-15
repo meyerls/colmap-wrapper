@@ -13,7 +13,7 @@ import setuptools
 #    long_description = f.read()
 
 setuptools.setup(
-    name='colmap',
+    name='colmap_wrapper',
     version='0.0.1',
     description='COLMAP Handler',
     license="MIT",
@@ -21,8 +21,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     author='Lukas Meyer',
     author_email='lukas.meyer@fau.de',
-    url="https://github.com/meyerls/colmap",
-    packages=setuptools.find_packages(),
+    url="https://github.com/meyerls/colmap-wrapper",
+    packages=['colmap_wrapper'],
     install_requires=["numpy"],  # external packages as dependencies
     classifiers=[
         'Programming Language :: Python :: 3.9',
