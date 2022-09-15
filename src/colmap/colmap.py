@@ -162,9 +162,9 @@ class COLMAP:
                 self.images[image_idx].depth_image_geometric = read_array(
                     path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
 
-                #print(self.images[image_idx].name)
-                #print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
-                #print('\n')
+                # print(self.images[image_idx].name)
+                # print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
+                # print('\n')
 
                 min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
 
@@ -325,13 +325,13 @@ class COLMAP:
 
 
 if __name__ == '__main__':
-    #project = COLMAP(project_path='data/door', load_images=True, load_depth=True, image_resize=0.4)
-    #project = COLMAP(project_path='/home/luigi/Dropbox/07_data/CherrySLAM/test_sequences/01_easy/reco/',
+    # project = COLMAP(project_path='data/door', load_images=True, load_depth=True, image_resize=0.4)
+    # project = COLMAP(project_path='/home/luigi/Dropbox/07_data/CherrySLAM/test_sequences/01_easy/reco/',
     project = COLMAP(project_path='/home/se86kimy/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
-                    dense_pc='fused.ply',
-                    load_images=True,
-                    load_depth=True,
-                    image_resize=0.4)
+                     dense_pc='fused.ply',
+                     load_images=True,
+                     load_depth=True,
+                     image_resize=0.4)
 
     camera = project.cameras
     images = project.images

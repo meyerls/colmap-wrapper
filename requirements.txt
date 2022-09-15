@@ -5,3 +5,4 @@ pyquaternion==0.9.9
 matplotlib
 tqdm==4.64.0
 wget==3.2
+sklearn

@@ -1,0 +1,16 @@
+name: colmap_wrapper
+channels:
+  - conda-forge
+dependencies:
+  - python==3.8
+  - numpy
+  - pip
+  - pip:
+    - open3d==0.15.1
+    - opencv-python==4.6.0.66
+    - matplotlib
+    - tqdm==4.64.0
+    - wget==3.2
+    - numpy
+    - pyquaternion==0.9.9
+    - matplotlib
