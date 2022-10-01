@@ -177,6 +177,7 @@ class Intrinsics:
         self.fy = camera.params[1]
         self.cx = camera.params[2]
         self.cy = camera.params[3]
+        self.k1 = camera.params[4]
 
     @property
     def cx(self):

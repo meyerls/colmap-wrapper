@@ -7,15 +7,18 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Built-in/Generic Imports
 import os
+import pathlib
+
+import pycolmap
 
 # Libs
 
 # Own modules
 
 try:
-    from utils import *
-    from visualization import *
-    from bin import *
+    from colmap_wrapper.utils import *
+    from colmap_wrapper.visualization import *
+    from colmap_wrapper.bin import *
 except ImportError:
     from .utils import *
     from .visualization import *
@@ -46,7 +49,32 @@ def __read_depth_image(path):
     # plt.show()
 
 
-class COLMAP:
+class PhotogrammetrySoftware(object):
+    def __init__(self, project_path):
+        self._project_path = None
+
+        self.sparse = None
+        self.dense = None
+
+        self.geometries = []
+
+    def __read_images(self):
+        return NotImplementedError
+
+    def get_sparse(self):
+        return generate_colmap_sparse_pc(self.sparse)
+
+    def show_sparse(self):
+        o3d.visualization.draw_geometries([self.get_sparse()])
+
+    def get_dense(self):
+        return self.dense
+
+    def show_dense(self):
+        o3d.visualization.draw_geometries([self.get_dense()])
+
+
+class COLMAP(PhotogrammetrySoftware):
     def __init__(self, project_path: str,
                  dense_pc: str = 'fused.ply',
                  load_images: bool = False,
@@ -90,17 +118,32 @@ class COLMAP:
         :param project_path:
         :param image_path:
         '''
+        PhotogrammetrySoftware.__init__(self, project_path=project_path)
+
         self._project_path = path.Path(project_path)
 
-        self._src_image_path = self._project_path.joinpath('images')
-        if not os.path.exists(self._src_image_path):
-            self._src_image_path = self._project_path.joinpath('dense').joinpath('0').joinpath('images')
+        if '~' in str(self._project_path):
+            self._project_path = self._project_path.expanduser()
+
         self._sparse_base_path = self._project_path.joinpath('sparse')
         if not self._sparse_base_path.exists():
             raise ValueError('Colmap project structure: sparse folder (cameras, images, points3d) can not be found')
-
-        if os.path.exists(self._sparse_base_path.joinpath('0')):
+        if self._sparse_base_path.joinpath('0').exists():
             self._sparse_base_path = self._sparse_base_path.joinpath('0')
+
+        self._dense_base_path = self._project_path.joinpath('dense')
+        if self._dense_base_path.joinpath('0').exists():
+            self._dense_base_path = self._dense_base_path.joinpath('0')
+
+        if not self._dense_base_path.exists():
+            self._dense_base_path = self._project_path
+
+        # Loads undistorted images
+        self._src_image_path = self._dense_base_path.joinpath('images')
+        self._fused_path = self._dense_base_path.joinpath(dense_pc)
+        self._stereo_path = self._dense_base_path.joinpath('stereo')
+        self._depth_image_path = self._stereo_path.joinpath('depth_maps')
+        self._normal_image_path = self._stereo_path.joinpath('normal_maps')
 
         files = []
         types = ('*.txt', '*.bin')
@@ -117,20 +160,8 @@ class COLMAP:
             else:
                 raise ValueError('Unkown file in sparse folder')
 
-        self._fused_path = self._project_path.joinpath(dense_pc)
-        if not os.path.exists(self._fused_path):
-            self._fused_path = self._project_path.joinpath('dense').joinpath('0').joinpath(dense_pc)
-
-        if not os.path.exists(self._project_path.joinpath('stereo')):
-            self._stereo_path = self._project_path.joinpath('dense').joinpath('0').joinpath('stereo')
-        else:
-            self._stereo_path = self._project_path.joinpath('stereo')
-
-        self._depth_image_path = self._stereo_path.joinpath('depth_maps')
-
         self.load_images = load_images
         self.load_depth = load_depth
-        self.geometries = None
         self.image_resize = image_resize
         self.vis_bg_color = bg_color
 
@@ -180,13 +211,48 @@ class COLMAP:
 
             self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
 
+            # Fixing Strange Error when cy is negative
+            if self.images[image_idx].intrinsics.cx < 0:
+                pass
+
+            if self.images[image_idx].intrinsics.cy < 0:
+                pass
+
     def __read_cameras(self):
-        if self._camera_path.suffix == '.txt':
-            self.cameras = read_cameras_text(self._camera_path)
-        elif self._camera_path.suffix == '.bin':
-            self.cameras = read_cameras_binary(self._camera_path)
-        else:
-            raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
+        reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
+        self.cameras = {}
+        for camera_id, camera in reconstruction.cameras.items():
+            if camera.model_name == 'SIMPLE_RADIAL':
+                params = np.asarray([camera.params[0],  # fx
+                                     camera.params[0],  # fy
+                                     camera.params[1],  # cx
+                                     camera.params[2],  # cy
+                                     camera.params[3]])  # k1
+                # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
+
+            elif camera.model_name == 'PINHOLE':
+                params = np.asarray([camera.params[0],  # fx
+                                     camera.params[1],  # fy
+                                     camera.params[2],  # cx
+                                     camera.params[3],  # cy
+                                     0])  # k1
+
+            else:
+                raise NotImplementedError('Model {} is not implemented!'.format(model_name))
+
+            camera_params = Camera(id=camera.camera_id,
+                                   model=camera.model_name,
+                                   width=camera.width,
+                                   height=camera.height,
+                                   params=params)
+
+            self.cameras.update({camera_id: camera_params})
+            # if self._camera_path.suffix == '.txt':
+            #    self.cameras = read_cameras_text(self._camera_path)
+            # elif self._camera_path.suffix == '.bin':
+            # self.cameras = read_cameras_binary(self._camera_path)
+            # else:
+            #    raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_images(self):
         if self._image_path.suffix == '.txt':
@@ -220,26 +286,19 @@ class COLMAP:
     def __read_dense_model(self):
         self.dense = o3d.io.read_point_cloud(self._fused_path.__str__())
 
-    def get_sparse(self):
-        return generate_colmap_sparse_pc(self.sparse)
+    def add_colmap_dense2geometrie(self):
+        self.geometries.append(self.get_dense())
 
-    def show_sparse(self):
-        o3d.visualization.draw_geometries([self.get_sparse()])
+    def add_colmap_sparse2geometrie(self):
+        self.geometries.append(self.get_sparse())
 
-    def get_dense(self):
-        return self.dense
-
-    def show_dense(self):
-        o3d.visualization.draw_geometries([self.get_dense()])
-
-    def add_colmap_reconstruction_geometries(self, frustum_scale: float = 1., image_type: str = 'image'):
+    def add_colmap_frustums2geometrie(self, frustum_scale: float = 1., image_type: str = 'image'):
         """
 
         @param image_type:
         @type frustum_scale: object
         """
-        geometries = [self.get_dense(), self.get_sparse()]
-
+        geometries = []
         for image_idx in self.images.keys():
 
             if image_type == 'image':
@@ -270,9 +329,9 @@ class COLMAP:
             geometries.append(line_set)
             geometries.extend(sphere)
 
-        self.geometries = geometries
+        self.geometries.extend(geometries)
 
-    def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image'):
+    def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image', *args):
         """
 
         @param frustum_scale:
@@ -284,7 +343,9 @@ class COLMAP:
         if image_type not in image_types:
             raise TypeError('image type is {}. Only {} is allowed'.format(image_type, image_types))
 
-        self.add_colmap_reconstruction_geometries(frustum_scale=frustum_scale, image_type=image_type)
+        self.add_colmap_dense2geometrie()
+        self.add_colmap_sparse2geometrie()
+        self.add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
         self.start_visualizer(point_size=point_size)
 
     def start_visualizer_scaled(self,
@@ -338,4 +399,4 @@ if __name__ == '__main__':
     sparse = project.get_sparse()
     dense = project.get_dense()
 
-    project.visualization(frustum_scale=0.2, image_type='depth_geo')
+    project.visualization(frustum_scale=0.2, image_type='depth_geo', object=1)
