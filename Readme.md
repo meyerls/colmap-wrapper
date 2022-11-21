@@ -10,7 +10,8 @@ Colmap wrapper is a library to work with colmap projects. The purpose is the sim
 images, camera poses, sparse point clouds etc. Additionally a visualization for a colmap project is provided.
 
 <p align="center">
-    <img width="60%" src="img/img.png">
+    <img width="40%" src="img/img_1.png">
+    <img width="50%" src="img/img_2.png">
 </p>
 
 ## Installation

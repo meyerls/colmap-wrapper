@@ -194,6 +194,7 @@ class COLMAP(PhotogrammetrySoftware):
         @return:
         """
         self.max_depth_scaler = 0
+        self.max_depth_scaler_photometric = 0
         for image_idx in self.images.keys():
             self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
             if self.load_images:
@@ -221,6 +222,12 @@ class COLMAP(PhotogrammetrySoftware):
 
                 self.images[image_idx].depth_image_photometric = read_array(
                     path=next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
+
+                min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_photometric, [5, 95])
+
+                if max_depth > self.max_depth_scaler_photometric:
+                    self.max_depth_scaler_photometric = max_depth
+
             else:
                 self.images[image_idx].depth_image_geometric = None
                 self.images[image_idx].depth_path_photometric = None
@@ -361,7 +368,7 @@ class COLMAP(PhotogrammetrySoftware):
                 image = (image / self.max_depth_scaler * 255).astype(np.uint8)
                 image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
             elif image_type == 'depth_photo':
-                image = self.images[image_idx].depth_path_photometric
+                image = self.images[image_idx].depth_image_photometric
                 min_depth, max_depth = np.percentile(
                     image, [5, 95])
                 image[image < min_depth] = min_depth
@@ -431,4 +438,4 @@ if __name__ == '__main__':
     sparse = project.get_sparse()
     dense = project.get_dense()
 
-    project.visualization(frustum_scale=0.2, image_type='image')
+    project.visualization(frustum_scale=0.8, image_type='depth_geo')
