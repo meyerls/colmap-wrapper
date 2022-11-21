@@ -77,11 +77,11 @@ class PhotogrammetrySoftware(object):
 class COLMAP(PhotogrammetrySoftware):
     def __init__(self, project_path: str,
                  dense_pc: str = 'fused.ply',
-                 load_images: bool = False,
+                 load_images: bool = True,
                  load_depth: bool = False,
                  image_resize: float = 1.,
                  bg_color: np.ndarray = np.asarray([1, 1, 1])):
-        '''
+        """
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
         documentation (https://colmap.github.io/format.html):
@@ -115,9 +115,14 @@ class COLMAP(PhotogrammetrySoftware):
             +── run-colmap-geometric.sh
             +── run-colmap-photometric.sh
 
-        :param project_path:
-        :param image_path:
-        '''
+        @param project_path: path to colmap project
+        @param dense_pc: path to dense point cloud (Might be useful if pc has been renamed or deviades from fused.ply)
+        @param load_images: flag to load images.
+        @param load_depth: flag to load depth images.
+        @param image_resize: float to scale images if image size is to large for RAM storage
+        @param bg_color: background color for visualization
+        """
+
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
 
         self._project_path = path.Path(project_path)
@@ -168,6 +173,11 @@ class COLMAP(PhotogrammetrySoftware):
         self.read()
 
     def read(self):
+        """
+        Start reading all necessary information
+
+        @return:
+        """
         self.__read_cameras()
         self.__read_images()
         self.__read_sparse_model()
@@ -176,6 +186,13 @@ class COLMAP(PhotogrammetrySoftware):
         self.__add_infos()
 
     def __add_infos(self):
+        """
+        Loads rgb image and depth images from path and adds it to the Image object.
+
+        @warning: this might exceed your storage! Think about adjusting the scaling parameter.
+
+        @return:
+        """
         self.max_depth_scaler = 0
         for image_idx in self.images.keys():
             self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
@@ -219,6 +236,12 @@ class COLMAP(PhotogrammetrySoftware):
                 pass
 
     def __read_cameras(self):
+        """
+        Load camera model from file. Currently only Simple Radial and 'Pinhole' are supported. If the camera settings
+        are identical for all images only one camera is provided. Otherwise, every image has its own camera model.
+
+        @return:
+        """
         reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
         self.cameras = {}
         for camera_id, camera in reconstruction.cameras.items():
@@ -238,7 +261,7 @@ class COLMAP(PhotogrammetrySoftware):
                                      0])  # k1
 
             else:
-                raise NotImplementedError('Model {} is not implemented!'.format(model_name))
+                raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
 
             camera_params = Camera(id=camera.camera_id,
                                    model=camera.model_name,
@@ -247,14 +270,14 @@ class COLMAP(PhotogrammetrySoftware):
                                    params=params)
 
             self.cameras.update({camera_id: camera_params})
-            # if self._camera_path.suffix == '.txt':
-            #    self.cameras = read_cameras_text(self._camera_path)
-            # elif self._camera_path.suffix == '.bin':
-            # self.cameras = read_cameras_binary(self._camera_path)
-            # else:
-            #    raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_images(self):
+        """
+        Load infos about images from either image.bin or image.txt file and saves it into an Image object which contains
+        information about camera_id, camera extrinsics, image_name, triangulated points (3D), keypoints (2D), etc.
+
+        @return:
+        """
         if self._image_path.suffix == '.txt':
             self.images = read_images_text(self._image_path)
         elif self._image_path.suffix == '.bin':
@@ -263,6 +286,13 @@ class COLMAP(PhotogrammetrySoftware):
             raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_sparse_model(self):
+        """
+        Read sparse points from either points3D.bin or points3D.txt file. Every point is saved as an Point3D object
+        containing information about error, image_ids (from which image can this point be seen?), points2D-idx
+        (which keypoint idx is the observation of this triangulated point), rgb value and xyz position.
+
+        @return:
+        """
         if self._points3D_path.suffix == '.txt':
             self.sparse = read_points3D_text(self._points3D_path)
         elif self._points3D_path.suffix == '.bin':
@@ -271,7 +301,11 @@ class COLMAP(PhotogrammetrySoftware):
             raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
 
     def __read_depth_structure(self):
+        """
+        Loads the path for both depth map types ('geometric and photometric') of the reconstruction project.
 
+        @return:
+        """
         self.depth_path_geometric = []
         self.depth_path_photometric = []
 
@@ -284,6 +318,11 @@ class COLMAP(PhotogrammetrySoftware):
                 raise ValueError('Unkown depth image type: {}'.format(path))
 
     def __read_dense_model(self):
+        """
+        Load dense point cloud from path.
+
+        @return:
+        """
         self.dense = o3d.io.read_point_cloud(self._fused_path.__str__())
 
     def add_colmap_dense2geometrie(self):
@@ -357,23 +396,6 @@ class COLMAP(PhotogrammetrySoftware):
         self.add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
         self.start_visualizer(point_size=point_size)
 
-    def start_visualizer_scaled(self,
-                                geometries,
-                                point_size: float,
-                                title: str = "Open3D Visualizer",
-                                size: tuple = (1920, 1080)):
-        viewer = o3d.visualization.Visualizer()
-        viewer.create_window(window_name=title, width=size[0], height=size[1])
-
-        for geometry in geometries:
-            viewer.add_geometry(geometry)
-        opt = viewer.get_render_option()
-        # opt.show_coordinate_frame = True
-        opt.point_size = point_size
-        opt.background_color = self.vis_bg_color
-        viewer.run()
-        viewer.destroy_window()
-
     def start_visualizer(self,
                          point_size: float,
                          title: str = "Open3D Visualizer",
@@ -386,7 +408,7 @@ class COLMAP(PhotogrammetrySoftware):
         opt = viewer.get_render_option()
         # opt.show_coordinate_frame = True
         opt.point_size = point_size
-        opt. line_width = 0.01
+        opt.line_width = 0.01
         opt.background_color = self.vis_bg_color
         viewer.run()
         viewer.destroy_window()
@@ -409,4 +431,4 @@ if __name__ == '__main__':
     sparse = project.get_sparse()
     dense = project.get_dense()
 
-    project.visualization(frustum_scale=0.2, image_type='depth_geo', object=1)
+    project.visualization(frustum_scale=0.2, image_type='image')
