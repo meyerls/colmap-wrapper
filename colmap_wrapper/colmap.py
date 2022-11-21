@@ -287,10 +287,19 @@ class COLMAP(PhotogrammetrySoftware):
         self.dense = o3d.io.read_point_cloud(self._fused_path.__str__())
 
     def add_colmap_dense2geometrie(self):
+        if np.asarray(self.get_dense().points).shape[0] == 0:
+            return False
+
         self.geometries.append(self.get_dense())
 
+        return True
+
     def add_colmap_sparse2geometrie(self):
+        if np.asarray(self.get_sparse().points).shape[0] == 0:
+            return False
+
         self.geometries.append(self.get_sparse())
+        return True
 
     def add_colmap_frustums2geometrie(self, frustum_scale: float = 1., image_type: str = 'image'):
         """
@@ -377,6 +386,7 @@ class COLMAP(PhotogrammetrySoftware):
         opt = viewer.get_render_option()
         # opt.show_coordinate_frame = True
         opt.point_size = point_size
+        opt. line_width = 0.01
         opt.background_color = self.vis_bg_color
         viewer.run()
         viewer.destroy_window()
