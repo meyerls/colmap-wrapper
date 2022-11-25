@@ -5,58 +5,24 @@
 Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tree/97603b0d352df4e0da87e3ce822a9704ac437933
 """
 
-# Built-in/Generic Imports
-import os
-import pathlib
-
+import numpy as np
+import open3d as o3d
 import pycolmap
 
-# Libs
-
-# Own modules
-
-try:
-    from colmap_wrapper.utils import *
-    from colmap_wrapper.visualization import *
-    from colmap_wrapper.bin import *
-except ImportError:
-    from .utils import *
-    from .visualization import *
-    from .bin import *
-
-
-def load_image(image_path: str) -> np.ndarray:
-    """
-    Load Image. This takes almost 50% of the time. Would be nice if it is possible to speed up this process. Any
-    ideas?
-
-    :param image_path:
-    :return:
-    """
-    return np.asarray(PIL.Image.open(image_path))
+from pathlib import Path
+from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text, read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
 
 
 def __read_depth_image(path):
     depth_map = read_array(path)
     return depth_map
-    # Visualization
-    # min_depth, max_depth = np.percentile(
-    #    depth_map, [5, 95])
-    # depth_map[depth_map < min_depth] = min_depth
-    # depth_map[depth_map > max_depth] = max_depth
-    # from pylab import plt
-    # plt.imshow(depth_map)
-    # plt.show()
-
 
 class PhotogrammetrySoftware(object):
     def __init__(self, project_path):
-        self._project_path = None
+        self._project_path = project_path
 
         self.sparse = None
         self.dense = None
-
-        self.geometries = []
 
     def __read_images(self):
         return NotImplementedError
@@ -64,23 +30,17 @@ class PhotogrammetrySoftware(object):
     def get_sparse(self):
         return generate_colmap_sparse_pc(self.sparse)
 
-    def show_sparse(self):
-        o3d.visualization.draw_geometries([self.get_sparse()])
-
     def get_dense(self):
         return self.dense
 
-    def show_dense(self):
-        o3d.visualization.draw_geometries([self.get_dense()])
-
-
 class COLMAP(PhotogrammetrySoftware):
-    def __init__(self, project_path: str,
-                 dense_pc: str = 'fused.ply',
-                 load_images: bool = True,
-                 load_depth: bool = False,
-                 image_resize: float = 1.,
-                 bg_color: np.ndarray = np.asarray([1, 1, 1])):
+    def __init__(
+                    self,
+                    project_path: str,
+                    dense_pc: str = 'fused.ply',
+                    load_depth: bool = False,
+                    image_resize: float = 1.
+                ):
         """
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
@@ -117,7 +77,6 @@ class COLMAP(PhotogrammetrySoftware):
 
         @param project_path: path to colmap project
         @param dense_pc: path to dense point cloud (Might be useful if pc has been renamed or deviades from fused.ply)
-        @param load_images: flag to load images.
         @param load_depth: flag to load depth images.
         @param image_resize: float to scale images if image size is to large for RAM storage
         @param bg_color: background color for visualization
@@ -125,7 +84,8 @@ class COLMAP(PhotogrammetrySoftware):
 
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
 
-        self._project_path = path.Path(project_path)
+        # Search and Set Paths
+        self._project_path = Path(project_path)
 
         if '~' in str(self._project_path):
             self._project_path = self._project_path.expanduser()
@@ -165,11 +125,11 @@ class COLMAP(PhotogrammetrySoftware):
             else:
                 raise ValueError('Unkown file in sparse folder')
 
-        self.load_images = load_images
+        # Set Variables
         self.load_depth = load_depth
         self.image_resize = image_resize
-        self.vis_bg_color = bg_color
-
+        
+        # Start Reading Files
         self.read()
 
     def read(self):
@@ -181,9 +141,13 @@ class COLMAP(PhotogrammetrySoftware):
         self.__read_cameras()
         self.__read_images()
         self.__read_sparse_model()
+        #print("test5")
         self.__read_dense_model()
+        #print("test6")
         self.__read_depth_structure()
+        #print("test7")
         self.__add_infos()
+        #print("test8")
 
     def __add_infos(self):
         """
@@ -197,25 +161,12 @@ class COLMAP(PhotogrammetrySoftware):
         self.max_depth_scaler_photometric = 0
         for image_idx in self.images.keys():
             self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
-            if self.load_images:
-                image = load_image(self.images[image_idx].path)
-
-                if self.image_resize != 1.:
-                    image = cv2.resize(image, (0, 0), fx=self.image_resize, fy=self.image_resize)
-
-                self.images[image_idx].image = image
-            else:
-                self.images[image_idx].image = None
 
             if self.load_depth:
                 self.images[image_idx].depth_image_geometric = read_array(
                     path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
 
-                # print(self.images[image_idx].name)
-                # print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
-                # print('\n')
-
-                min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
+                _, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
 
                 if max_depth > self.max_depth_scaler:
                     self.max_depth_scaler = max_depth
@@ -223,7 +174,7 @@ class COLMAP(PhotogrammetrySoftware):
                 self.images[image_idx].depth_image_photometric = read_array(
                     path=next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
 
-                min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_photometric, [5, 95])
+                _, max_depth = np.percentile(self.images[image_idx].depth_image_photometric, [5, 95])
 
                 if max_depth > self.max_depth_scaler_photometric:
                     self.max_depth_scaler_photometric = max_depth
@@ -258,7 +209,6 @@ class COLMAP(PhotogrammetrySoftware):
                                      camera.params[1],  # cx
                                      camera.params[2],  # cy
                                      camera.params[3]])  # k1
-                # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
 
             elif camera.model_name == 'PINHOLE':
                 params = np.asarray([camera.params[0],  # fx
@@ -322,7 +272,7 @@ class COLMAP(PhotogrammetrySoftware):
             elif 'photometric' in depth_path.__str__():
                 self.depth_path_photometric.append(depth_path.__str__())
             else:
-                raise ValueError('Unkown depth image type: {}'.format(path))
+                raise ValueError('Unkown depth image type: {}'.format(depth_path))
 
     def __read_dense_model(self):
         """
@@ -332,110 +282,6 @@ class COLMAP(PhotogrammetrySoftware):
         """
         self.dense = o3d.io.read_point_cloud(self._fused_path.__str__())
 
-    def add_colmap_dense2geometrie(self):
-        if np.asarray(self.get_dense().points).shape[0] == 0:
-            return False
-
-        self.geometries.append(self.get_dense())
-
-        return True
-
-    def add_colmap_sparse2geometrie(self):
-        if np.asarray(self.get_sparse().points).shape[0] == 0:
-            return False
-
-        self.geometries.append(self.get_sparse())
-        return True
-
-    def add_colmap_frustums2geometrie(self, frustum_scale: float = 1., image_type: str = 'image'):
-        """
-
-        @param image_type:
-        @type frustum_scale: object
-        """
-        geometries = []
-        for image_idx in self.images.keys():
-
-            if image_type == 'image':
-                image = self.images[image_idx].image
-            elif image_type == 'depth_geo':
-                image = self.images[image_idx].depth_image_geometric
-                min_depth, max_depth = np.percentile(
-                    image, [5, 95])
-                image[image < min_depth] = min_depth
-                image[image > max_depth] = max_depth
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-                image = (image / self.max_depth_scaler * 255).astype(np.uint8)
-                image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
-            elif image_type == 'depth_photo':
-                image = self.images[image_idx].depth_image_photometric
-                min_depth, max_depth = np.percentile(
-                    image, [5, 95])
-                image[image < min_depth] = min_depth
-                image[image > max_depth] = max_depth
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-
-            line_set, sphere, mesh = draw_camera_viewport(extrinsics=self.images[image_idx].extrinsics,
-                                                          intrinsics=self.images[image_idx].intrinsics.K,
-                                                          image=image,
-                                                          scale=frustum_scale)
-
-            geometries.append(mesh)
-            geometries.append(line_set)
-            geometries.extend(sphere)
-
-        self.geometries.extend(geometries)
-
-    def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image', *args):
-        """
-
-        @param frustum_scale:
-        @param point_size:
-        @param image_type: ['image, depth_geo', 'depth_photo']
-        """
-        image_types = ['image', 'depth_geo', 'depth_photo']
-
-        if image_type not in image_types:
-            raise TypeError('image type is {}. Only {} is allowed'.format(image_type, image_types))
-
-        self.add_colmap_dense2geometrie()
-        self.add_colmap_sparse2geometrie()
-        self.add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
-        self.start_visualizer(point_size=point_size)
-
-    def start_visualizer(self,
-                         point_size: float,
-                         title: str = "Open3D Visualizer",
-                         size: tuple = (1920, 1080)):
-        viewer = o3d.visualization.Visualizer()
-        viewer.create_window(window_name=title, width=size[0], height=size[1])
-
-        for geometry in self.geometries:
-            viewer.add_geometry(geometry)
-        opt = viewer.get_render_option()
-        # opt.show_coordinate_frame = True
-        opt.point_size = point_size
-        opt.line_width = 0.01
-        opt.background_color = self.vis_bg_color
-        viewer.run()
-        viewer.destroy_window()
 
     def write(self, data):
         pass
-
-
-if __name__ == '__main__':
-    # project = COLMAP(project_path='data/door', load_images=True, load_depth=True, image_resize=0.4)
-    # project = COLMAP(project_path='/home/luigi/Dropbox/07_data/CherrySLAM/test_sequences/01_easy/reco/',
-    project = COLMAP(project_path='/home/se86kimy/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
-                     dense_pc='fused.ply',
-                     load_images=True,
-                     load_depth=True,
-                     image_resize=0.4)
-
-    camera = project.cameras
-    images = project.images
-    sparse = project.get_sparse()
-    dense = project.get_dense()
-
-    project.visualization(frustum_scale=0.8, image_type='depth_geo')

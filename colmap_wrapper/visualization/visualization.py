@@ -11,7 +11,6 @@ See LICENSE file for more information.
 from typing import Tuple
 
 # Libs
-import cv2
 import numpy as np
 import open3d as o3d
 from PIL import Image, ImageFont, ImageDraw

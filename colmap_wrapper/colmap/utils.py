@@ -6,16 +6,8 @@ Licensed under the MIT License.
 See LICENSE file for more information.
 """
 
-# Built-in/Generic Imports
-# ...
-
-# Libs
 import numpy as np
 import open3d as o3d
-
-
-# Own modules
-# ...
 
 
 def qvec2rotmat(qvec):

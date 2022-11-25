@@ -12,9 +12,5 @@ See LICENSE file for more information.
 # ...
 
 # Own modules
-from . import bin
-from . import camera
-from . import colmap
-from . import utils
-from . import visualization
+from colmap_wrapper.visualization import visualization
 

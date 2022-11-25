@@ -8,17 +8,10 @@ See LICENSE file for more information.
 
 # Built-in/Generic Imports
 import collections
-import pathlib
+import numpy as np
 
-# Libs
-import cv2
-import PIL
-
-# Own modules
-try:
-    from utils import *
-except ModuleNotFoundError:
-    from .utils import *
+from PIL import Image
+from colmap_wrapper.colmap import (qvec2rotmat)
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
 Camera = collections.namedtuple("Camera", ["id", "model", "width", "height", "params"])
@@ -37,18 +30,6 @@ CAMERA_MODELS = {
     CameraModel(model_id=10, model_name="THIN_PRISM_FISHEYE", num_params=12)
 }
 CAMERA_MODEL_IDS = dict([(camera_model.model_id, camera_model) for camera_model in CAMERA_MODELS])
-
-
-def load_image(image_path: str) -> np.ndarray:
-    """
-    Load Image. This takes almost 50% of the time. Would be nice if it is possible to speed up this process. Any
-    ideas?
-
-    :param image_path:
-    :return:
-    """
-    return np.asarray(PIL.Image.open(image_path))
-
 
 class Point3D:
     def __init__(self,
@@ -98,7 +79,6 @@ class Image(object):
         self.point3D_ids = point3D_ids
         self.point3DiD_to_kpidx = point3DiD_to_kpidx
 
-        self.downsample = 0.3
         self.intrinsics = None
 
         self.path = None
@@ -106,11 +86,13 @@ class Image(object):
         self.__image = None
 
     @property
-    def image(self) -> np.ndarray:
+    def image(self, downsample: float = 1.0) -> np.ndarray:
         if self.__image is None:
-            img = load_image(self.path)
-            self.__image = cv2.resize(img, (0, 0), fx=self.downsample, fy=self.downsample)
-            del img
+            img = Image.open(self.path)
+            width, height = img.size
+            img = img.resize((int(width * downsample), int(height * downsample)))
+            
+            return np.array()
 
         return self.__image
 
@@ -218,33 +200,3 @@ class Intrinsics:
                         [0, 0, 1]])
 
         return K
-
-
-if __name__ == '__main__':
-    import json
-    import pathlib
-    import matplotlib.pyplot as plt
-
-    image_id = 1
-    qvec = np.array([0.95161614, -0.05707647, -0.3016161, -0.01402605])
-    tvec = np.array([0.65905613, 0.10833697, 0.21707027])
-    camera_id = 1
-    image_name = 'DSC_7772.JPG'
-    xys = np.loadtxt('test/xys.txt')
-    point3D_ids = np.loadtxt('test/point3D_ids.txt')
-    with open('test/pt3did_to_kpidx.json', 'r') as file:
-        pt3did_to_kpidx = json.load(file)
-
-    image = Image(image_id=image_id,
-                  qvec=qvec,
-                  tvec=tvec,
-                  camera_id=camera_id,
-                  name=image_name,
-                  image_path=(pathlib.Path('../../data/door/images').resolve() / image_name).resolve(),
-                  xys=xys,
-                  point3D_ids=point3D_ids,
-                  point3DiD_to_kpidx=pt3did_to_kpidx)
-
-    img = image.image
-    plt.imshow(img)
-    plt.show()

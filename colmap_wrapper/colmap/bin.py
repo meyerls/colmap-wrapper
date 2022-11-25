@@ -7,18 +7,13 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Built-in/Generic Imports
 import struct
-import collections
 
 # Libs
 import numpy as np
-import open3d as o3d
 import pathlib as path
 
 # Own
-try:
-    from camera import *
-except ModuleNotFoundError:
-    from .camera import *
+from colmap_wrapper.colmap.camera import (CAMERA_MODEL_IDS, Camera, Image, Point3D)
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
@@ -54,7 +49,6 @@ def write_cameras_binary(a):
     }
 
     @param a:
-    @param b:
     @return:
     """
     pass
@@ -71,7 +65,7 @@ def read_cameras_binary(path_to_model_file):
     with open(path_to_model_file, "rb") as fid:
         # First 8 bits contain information about the quantity of different camera models
         num_cameras = read_next_bytes(fid, 8, "Q")[0]
-        for camera_line_index in range(num_cameras):
+        for _ in range(num_cameras): # camera_line_index
             # Afterwards the 64 bits contain information about a specific camera
             camera_properties = read_next_bytes(fid, num_bytes=24, format_char_sequence="iiQQ")
             camera_id = camera_properties[0]
@@ -102,7 +96,7 @@ def read_images_binary(path_to_model_file):
     with open(path_to_model_file, "rb") as fid:
         # First 8 bits contain information about the quantity of different registrated camera models
         num_reg_images = read_next_bytes(fid, 8, "Q")[0]
-        for image_index in range(num_reg_images):
+        for _ in range(num_reg_images): # image_index
             # Image properties: (image_id, qvec, tvec, camera_id)
             binary_image_properties = read_next_bytes(
                 fid, num_bytes=64, format_char_sequence="idddddddi")
@@ -205,7 +199,7 @@ def read_points3d_binary(path_to_model_file):
     with open(path_to_model_file, "rb") as fid:
         # Number of points in sparse model
         num_points = read_next_bytes(fid, 8, "Q")[0]
-        for point_line_index in range(num_points):
+        for _ in range(num_points): # point_line_index
             binary_point_line_properties = read_next_bytes(
                 fid, num_bytes=43, format_char_sequence="QdddBBBd")
             # Point ID
@@ -329,15 +323,3 @@ def read_array(path):
         array = np.fromfile(fid, np.float32)
     array = array.reshape((width, height, channels), order="F")
     return np.transpose(array, (1, 0, 2)).squeeze()
-
-
-if __name__ == '__main__':
-    reco_base_path = path.Path('../../data/door')
-    sparse_base_path = reco_base_path.joinpath('sparse')
-    camera_path = sparse_base_path.joinpath('cameras.bin')
-    image_path = sparse_base_path.joinpath('images.bin')
-    points3D_path = sparse_base_path.joinpath('points3D.bin')
-
-    points3D = read_points3d_binary(points3D_path)
-    cameras = read_cameras_binary(camera_path)
-    images = read_images_binary(image_path)

@@ -30,7 +30,7 @@ pip install colmap-wrapper
 ```python
 from colmap_wrapper.colmap import COLMAP
 
-project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_images=True, load_depth=True, image_resize=0.4)
+project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_depth=True, image_resize=0.4)
 
 # Acess camera, images and sparse + dense point cloud
 camera = project.cameras
@@ -40,3 +40,6 @@ dense = project.get_dense()
 
 project.visualization(frustum_scale=0.2, image_type='image')
 ```
+
+## TODO
+- image_resize currently not working
