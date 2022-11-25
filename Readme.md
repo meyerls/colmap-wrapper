@@ -40,3 +40,8 @@ dense = project.get_dense()
 
 project.visualization(frustum_scale=0.2, image_type='image')
 ```
+
+## References
+
+GPS visualization is done by: https://github.com/tisljaricleo/GPS-visualization-Python 
+A guide to visualize gps data can be found here: https://towardsdatascience.com/simple-gps-data-visualization-using-python-and-open-street-maps-50f992e9b676 
