@@ -141,17 +141,13 @@ class COLMAP(PhotogrammetrySoftware):
         self.__read_cameras()
         self.__read_images()
         self.__read_sparse_model()
-        #print("test5")
         self.__read_dense_model()
-        #print("test6")
         self.__read_depth_structure()
-        #print("test7")
         self.__add_infos()
-        #print("test8")
 
     def __add_infos(self):
         """
-        Loads rgb image and depth images from path and adds it to the Image object.
+        Loads depth images from path and adds it to the Image object.
 
         @warning: this might exceed your storage! Think about adjusting the scaling parameter.
 
@@ -163,16 +159,14 @@ class COLMAP(PhotogrammetrySoftware):
             self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
 
             if self.load_depth:
-                self.images[image_idx].depth_image_geometric = read_array(
-                    path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
+                self.images[image_idx].depth_image_geometric = read_array(path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
 
                 _, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
 
                 if max_depth > self.max_depth_scaler:
                     self.max_depth_scaler = max_depth
 
-                self.images[image_idx].depth_image_photometric = read_array(
-                    path=next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
+                self.images[image_idx].depth_image_photometric = read_array(path=next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
 
                 _, max_depth = np.percentile(self.images[image_idx].depth_image_photometric, [5, 95])
 
@@ -182,7 +176,6 @@ class COLMAP(PhotogrammetrySoftware):
             else:
                 self.images[image_idx].depth_image_geometric = None
                 self.images[image_idx].depth_path_photometric = None
-            # self.images[image_idx].normal_image = self.__read_depth_images
 
             self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
 
