@@ -6,11 +6,5 @@ Licensed under the MIT License.
 See LICENSE file for more information.
 """
 
-# Built-in/Generic Imports
-# ...
-# Libs
-# ...
-
-# Own modules
-from colmap_wrapper.visualization import visualization
-
+from colmap_wrapper.colmap import *
+from colmap_wrapper.visualization import *

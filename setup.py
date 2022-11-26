@@ -22,7 +22,7 @@ setuptools.setup(
     author='Lukas Meyer',
     author_email='lukas.meyer@fau.de',
     url="https://github.com/meyerls/colmap-wrapper",
-    packages=['colmap_wrapper'],
+    packages=['colmap_wrapper.colmap', 'colmap_wrapper.visualization'],
     install_requires=["numpy"],  # external packages as dependencies
     classifiers=[
         'Programming Language :: Python :: 3.8',

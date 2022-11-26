@@ -136,3 +136,7 @@ dmypy.json
 # Eclipse
 /.project
 /.pydevproject
+.settings/
+
+# Test Files
+test*.py
