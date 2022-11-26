@@ -42,6 +42,3 @@ dense = project.get_dense()
 project_vs = ColmapVisualization(project)
 project_vs.visualization(frustum_scale=0.2, image_type='image')
 ```
-
-## TODO
-- image_resize currently not working
