@@ -29,8 +29,9 @@ pip install colmap-wrapper
 
 ```python
 from colmap_wrapper.colmap import COLMAP
+from colmap_wrapper.visualization import ColmapVisualization
 
-project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_depth=True, image_resize=0.4)
+project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_depth=True, image_resize=0.3)
 
 # Acess camera, images and sparse + dense point cloud
 camera = project.cameras
@@ -38,7 +39,8 @@ images = project.images
 sparse = project.get_sparse()
 dense = project.get_dense()
 
-project.visualization(frustum_scale=0.2, image_type='image')
+project_vs = ColmapVisualization(project)
+project_vs.visualization(frustum_scale=0.2, image_type='image')
 ```
 
 ## TODO

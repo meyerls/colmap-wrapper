@@ -13,7 +13,7 @@ import numpy as np
 import pathlib as path
 
 # Own
-from colmap_wrapper.colmap.camera import (CAMERA_MODEL_IDS, Camera, Image, Point3D)
+from colmap_wrapper.colmap.camera import (CAMERA_MODEL_IDS, Camera, ImageInformation, Point3D)
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
@@ -133,7 +133,7 @@ def read_images_binary(path_to_model_file):
                         continue
                     pt3did_to_kpidx[ptid] = kpidx
 
-            images[image_id] = Image(image_id=image_id,
+            images[image_id] = ImageInformation(image_id=image_id,
                                      qvec=qvec,
                                      tvec=tvec,
                                      camera_id=camera_id,
@@ -178,7 +178,7 @@ def read_images_text(path):
                             continue
                         pt3did_to_kpidx[ptid] = kpidx
 
-                images[image_id] = Image(image_id=image_id,
+                images[image_id] = ImageInformation(image_id=image_id,
                                          qvec=qvec,
                                          tvec=tvec,
                                          camera_id=camera_id,

@@ -47,7 +47,7 @@ class Point3D:
         self.point2D_idxs = point2D_idxs
 
 
-class Image(object):
+class ImageInformation(object):
     def __init__(self,
                  image_id: int,
                  qvec: np.ndarray,
@@ -86,19 +86,22 @@ class Image(object):
         self.__image = None
 
     @property
-    def image(self, downsample: float = 1.0) -> np.ndarray:
-        if self.__image is None:
-            img = Image.open(self.path)
-            width, height = img.size
-            img = img.resize((int(width * downsample), int(height * downsample)))
-            
-            return np.array()
-
-        return self.__image
+    def image(self):
+        return self.getData(1.0)
 
     @image.setter
     def image(self, image: np.ndarray):
         self.__image = image
+
+    def getData(self, downsample: float = 1.0) -> np.ndarray:
+        if self.__image is None:
+            with Image.open(self.path) as img:
+                width, height = img.size
+                img = img.resize((int(width * downsample), int(height * downsample)))
+                
+                return np.array(list(img.getdata()), np.int8)
+            
+        return self.__image
 
     @property
     def extrinsics(self) -> np.ndarray:

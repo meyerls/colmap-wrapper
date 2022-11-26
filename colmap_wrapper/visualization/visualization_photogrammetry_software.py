@@ -47,11 +47,10 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         for image_idx in self.photogrammetry_software.images.keys():
 
             if image_type == 'image':
-                image = self.photogrammetry_software.images[image_idx].image
+                image = self.photogrammetry_software.images[image_idx].getData(self.photogrammetry_software.image_resize)
             elif image_type == 'depth_geo':
                 image = self.photogrammetry_software.images[image_idx].depth_image_geometric
-                min_depth, max_depth = np.percentile(
-                    image, [5, 95])
+                min_depth, max_depth = np.percentile(image, [5, 95])
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
