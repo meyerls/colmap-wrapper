@@ -11,7 +11,7 @@ images, camera poses, sparse point clouds etc. Additionally a visualization for 
 
 <p align="center">
     <img width="40%" src="img/img_1.png">
-    <img width="50%" src="img/img_2.png">
+    <img width="40%" src="img/img_2.png">
 </p>
 
 ## Installation

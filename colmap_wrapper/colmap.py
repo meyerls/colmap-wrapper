@@ -52,7 +52,7 @@ class COLMAP():
         for project_index, dense_project_path in enumerate(list(self._dense_base_path.iterdir())):
             project_structure[project_index].update({"dense": dense_project_path})
 
-        self.projects = []
+        self.project_list = []
         self.model_ids = []
         for project_index in project_structure.keys():
             self.model_ids.append(project_index)
@@ -64,7 +64,18 @@ class COLMAP():
                                     image_resize=0.4,
                                     bg_color=bg_color)
 
-            self.projects.append(project)
+            self.project_list.append(project)
+
+    @property
+    def projects(self):
+        if len(self.project_list) == 1:
+            return self.project_list[0]
+        elif len(self.project_list) > 1:
+            return self.project_list
+
+    @projects.setter
+    def projects(self, projects):
+        self.project_list = projects
 
     def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image', model_idx=0,
                       *args):
@@ -78,11 +89,11 @@ class COLMAP():
 
         if image_type not in image_types:
             raise TypeError('image type is {}. Only {} is allowed'.format(image_type, image_types))
-        self.projects[model_idx].geometries = []
-        self.projects[model_idx].add_colmap_dense2geometrie()
-        self.projects[model_idx].add_colmap_sparse2geometrie()
-        self.projects[model_idx].add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
-        self.projects[model_idx].start_visualizer(point_size=point_size)
+        self.project_list[model_idx].geometries = []
+        self.project_list[model_idx].add_colmap_dense2geometrie()
+        self.project_list[model_idx].add_colmap_sparse2geometrie()
+        self.project_list[model_idx].add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
+        self.project_list[model_idx].start_visualizer(point_size=point_size)
 
     def visualization_all(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image', *args):
         """
@@ -99,10 +110,11 @@ class COLMAP():
         self.geometries = []
 
         for model_idx in self.model_ids:
-            self.projects[model_idx].add_colmap_dense2geometrie()
-            self.projects[model_idx].add_colmap_sparse2geometrie()
-            self.projects[model_idx].add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
-            self.geometries.extend(self.projects[model_idx].geometries)
+            self.project_list[model_idx].add_colmap_dense2geometrie()
+            self.project_list[model_idx].add_colmap_sparse2geometrie()
+            self.project_list[model_idx].add_colmap_frustums2geometrie(frustum_scale=frustum_scale,
+                                                                       image_type=image_type)
+            self.geometries.extend(self.project_list[model_idx].geometries)
 
         self.start_visualizer(point_size=point_size)
 
@@ -125,25 +137,40 @@ class COLMAP():
 
 
 if __name__ == '__main__':
-    # project = COLMAP(project_path='data/door', load_images=True, load_depth=True, image_resize=0.4)
-    # project = COLMAP(project_path='/home/luigi/Dropbox/07_data/CherrySLAM/test_sequences/01_easy/reco/',
-    project = COLMAP(project_path='/home/luigi/Dropbox/07_data/For5G/22_11_14/reco',
-                     dense_pc='fused.ply',
-                     load_images=True,
-                     load_depth=False,
-                     image_resize=0.4)
 
-    project_0 = project.projects[0]
-    project_1 = project.projects[1]
+    MODE = 'single'
 
-    MODEL_IDX = 0
+    if MODE == "single":
+        project = COLMAP(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
+                         dense_pc='fused.ply',
+                         load_images=True,
+                         load_depth=True,
+                         image_resize=0.4)
 
-    camera = project_0.cameras
-    images = project_0.images
-    sparse = project_0.get_sparse()
-    dense = project_0.get_dense()
+        colmap_project = project.projects
 
-    # registrate(project.get_dense()[0], project.get_dense()[1])
+        MODEL_IDX = 0
 
-    # project.visualization(frustum_scale=0.8, image_type='image', model_idx=MODEL_IDX)
-    project.visualization_all(frustum_scale=0.8, image_type='image')
+        camera = colmap_project.cameras
+        images = colmap_project.images
+        sparse = colmap_project.get_sparse()
+        dense = colmap_project.get_dense()
+
+        # project.visualization(frustum_scale=0.8, image_type='image', model_idx=MODEL_IDX)
+        project.visualization(frustum_scale=0.8, image_type='depth_geo')
+    elif MODE == "multi":
+        project = COLMAP(project_path='/home/luigi/Dropbox/07_data/For5G/22_11_14/reco',
+                         dense_pc='fused.ply',
+                         load_images=True,
+                         load_depth=False,
+                         image_resize=0.4)
+
+        for model_idx, COLMAP_MODEL in enumerate(project.projects):
+            camera = COLMAP_MODEL.cameras
+            images = COLMAP_MODEL.images
+            sparse = COLMAP_MODEL.get_sparse()
+            dense = COLMAP_MODEL.get_dense()
+            project.visualization(frustum_scale=0.8, image_type='image', model_idx=model_idx)
+
+        # project.visualization(frustum_scale=0.8, image_type='image', model_idx=MODEL_IDX)
+        project.visualization_all(frustum_scale=0.8, image_type='image')
