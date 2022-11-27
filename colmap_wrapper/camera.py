@@ -8,11 +8,9 @@ See LICENSE file for more information.
 
 # Built-in/Generic Imports
 import collections
-import pathlib
 
 # Libs
 import cv2
-import PIL
 
 # Own modules
 try:
@@ -105,6 +103,8 @@ class Image(object):
 
         self.__image = None
 
+        self.set_extrinsics()
+
     @property
     def image(self) -> np.ndarray:
         if self.__image is None:
@@ -118,16 +118,17 @@ class Image(object):
     def image(self, image: np.ndarray):
         self.__image = image
 
-    @property
-    def extrinsics(self) -> np.ndarray:
-        Rwc = self.Rwc()
-        twc = self.twc()
+    def set_extrinsics(self, T: [None, np.ndarray] = None):
+        if isinstance(T, type(None)):
+            Rwc = self.Rwc()
+            twc = self.twc()
+        else:
+            Rwc = T[:3, :3]
+            twc = T[:3, 3]
 
-        M = np.eye(4)
-        M[:3, :3] = Rwc
-        M[:3, 3] = twc
-
-        return M
+        self.extrinsics = np.eye(4)
+        self.extrinsics[:3, :3] = Rwc
+        self.extrinsics[:3, 3] = twc
 
     def qvec2rotmat(self):
         return qvec2rotmat(self.qvec)
