@@ -24,6 +24,4 @@ jobs:
       - name: 'Test COLMAP wrapper'
         run: |
           ls -la
-          cd colmap_wrapper
-          ls -la
-          python test.py
+          python colmap_wrapper/test.py
