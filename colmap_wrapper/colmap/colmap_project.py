@@ -196,7 +196,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                     metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
                 self.images[image_idx].exifdata = metadata[0]
         except exiftool.exceptions.ExifToolExecuteError as error:
-            traceback.print_exc()
+            #traceback.print_exc()
             warnings.warn("Exif Data could not be read.")
 
     def __add_infos(self):
