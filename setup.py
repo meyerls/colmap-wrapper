@@ -9,7 +9,7 @@ See LICENSE file for more information.
 # Built-in/Generic Imports
 import setuptools
 
-#with open("Readme.md", 'r') as f:
+# with open("Readme.md", 'r') as f:
 #    long_description = f.read()
 
 setuptools.setup(
@@ -23,7 +23,15 @@ setuptools.setup(
     author_email='lukas.meyer@fau.de',
     url="https://github.com/meyerls/colmap-wrapper",
     packages=['colmap_wrapper.colmap', 'colmap_wrapper.visualization'],
-    install_requires=["numpy"],  # external packages as dependencies
+    install_requires=["numpy",
+                      "pyexiftool",
+                      "open3d",
+                      "pyquaternion",
+                      "matplotlib",
+                      "tqdm",
+                      "wget",
+                      "pycolmap"
+                      ],  # external packages as dependencies
     classifiers=[
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

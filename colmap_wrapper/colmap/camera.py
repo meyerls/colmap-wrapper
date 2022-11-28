@@ -8,9 +8,10 @@ See LICENSE file for more information.
 
 # Built-in/Generic Imports
 import collections
-import numpy as np
 
+import numpy as np
 from PIL import Image
+
 from colmap_wrapper.colmap import (qvec2rotmat)
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
@@ -30,6 +31,7 @@ CAMERA_MODELS = {
     CameraModel(model_id=10, model_name="THIN_PRISM_FISHEYE", num_params=12)
 }
 CAMERA_MODEL_IDS = dict([(camera_model.model_id, camera_model) for camera_model in CAMERA_MODELS])
+
 
 class Point3D:
     def __init__(self,
@@ -85,6 +87,8 @@ class ImageInformation(object):
 
         self.__image = None
 
+        self.set_extrinsics()
+
     @property
     def image(self):
         return self.getData(1.0)
@@ -98,21 +102,33 @@ class ImageInformation(object):
             with Image.open(self.path) as img:
                 width, height = img.size
                 img = img.resize((int(width * downsample), int(height * downsample)))
-                
-                return np.array(list(img.getdata()), np.int8)
-            
+
+                return np.asarray(img).astype(np.uint8)
+
         return self.__image
 
-    @property
-    def extrinsics(self) -> np.ndarray:
-        Rwc = self.Rwc()
-        twc = self.twc()
+        #    @property
+        #    def extrinsics(self) -> np.ndarray:
+        #        Rwc = self.Rwc()
+        #        twc = self.twc()
+        #
+        #        M = np.eye(4)
+        #        M[:3, :3] = Rwc
+        #        M[:3, 3] = twc
 
-        M = np.eye(4)
-        M[:3, :3] = Rwc
-        M[:3, 3] = twc
+        #return M
 
-        return M
+    def set_extrinsics(self, T: [None, np.ndarray] = None):
+        if isinstance(T, type(None)):
+            Rwc = self.Rwc()
+            twc = self.twc()
+        else:
+            Rwc = T[:3, :3]
+            twc = T[:3, 3]
+
+        self.extrinsics = np.eye(4)
+        self.extrinsics[:3, :3] = Rwc
+        self.extrinsics[:3, 3] = twc
 
     def qvec2rotmat(self):
         return qvec2rotmat(self.qvec)
