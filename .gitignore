@@ -1,6 +1,6 @@
 .idea/
 data/
-test.py
+#test.py
 colmap_wrapper.egg-info
 dist
 !colmap_wrapper/data
