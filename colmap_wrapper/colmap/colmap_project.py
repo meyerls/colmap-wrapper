@@ -20,16 +20,6 @@ from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_t
                                    read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
 
 
-# try:
-#    from colmap_wrapper.utils import *
-#    from colmap_wrapper.visualization import *
-#    from colmap_wrapper.bin import *
-# except ImportError:
-#    from .utils import *
-#    from .visualization import *
-#    from .bin import *
-
-
 class PhotogrammetrySoftware(object):
     def __init__(self, project_path):
         self._project_path = project_path
