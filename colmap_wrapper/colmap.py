@@ -138,7 +138,7 @@ class COLMAP():
 
 if __name__ == '__main__':
 
-    MODE = 'single'
+    MODE = 'multi'
 
     if MODE == "single":
         project = COLMAP(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',

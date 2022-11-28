@@ -8,6 +8,7 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 # Built-in/Generic Imports
 
 import pycolmap
+import exiftool
 
 # Libs
 
@@ -128,12 +129,14 @@ class COLMAPProject(PhotogrammetrySoftware):
         else:
             raise ValueError("{}".format(self._project_path))
 
-            # Loads undistorted images
+        # Loads undistorted images
         self._src_image_path = self._dense_base_path.joinpath('images')
         self._fused_path = self._dense_base_path.joinpath(dense_pc)
         self._stereo_path = self._dense_base_path.joinpath('stereo')
         self._depth_image_path = self._stereo_path.joinpath('depth_maps')
         self._normal_image_path = self._stereo_path.joinpath('normal_maps')
+
+        self.__project_ini_path = self._sparse_base_path.joinpath('project.ini')
 
         files = []
         types = ('*.txt', '*.bin')
@@ -154,6 +157,7 @@ class COLMAPProject(PhotogrammetrySoftware):
         self.load_depth = load_depth
         self.image_resize = image_resize
         self.vis_bg_color = bg_color
+        self.project_ini = self.__read_project_init_file()
 
         self.read()
 
@@ -169,6 +173,31 @@ class COLMAPProject(PhotogrammetrySoftware):
         self.__read_dense_model()
         self.__read_depth_structure()
         self.__add_infos()
+        self.__read_exif_data()
+
+    def __read_project_init_file(self):
+        if self.__project_ini_path.exists():
+            PROJECT_CLASS = 'Basic'
+            project_ini = {PROJECT_CLASS: {}}
+            with open(self.__project_ini_path.__str__(), 'r') as file:
+                for line in file:
+                    elements = line.split('=')
+                    if len(elements) == 1:
+                        PROJECT_CLASS = elements[0].strip('\n')
+                        project_ini.update({PROJECT_CLASS: {}})
+                        continue
+                    project_ini[PROJECT_CLASS].update({elements[0]: elements[1].strip('\n')})
+            return project_ini
+        else:
+            return {}
+
+    def __read_exif_data(self):
+        for image_idx in self.images.keys():
+            self.images[image_idx].original_filename = path.Path(self.project_ini['Basic']['image_path']) / self.images[
+                image_idx].name
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
+            self.images[image_idx].exifdata = metadata[0]
 
     def __add_infos(self):
         """
