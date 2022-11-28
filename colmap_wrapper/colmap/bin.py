@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+Copyright (c) 2022 Lukas Meyer
+Licensed under the MIT License.
+See LICENSE file for more information.
 
-'''
+
 Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tree/97603b0d352df4e0da87e3ce822a9704ac437933
-'''
+"""
 
 # Built-in/Generic Imports
 import struct

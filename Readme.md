@@ -30,22 +30,29 @@ pip install colmap-wrapper
 
 ### Single Reconstruction
 
-To visualize a single reconstruction from COLMAP, the following code reads all colmap elements and visualizes them.
+To visualize a single reconstruction from COLMAP, the following code reads all colmap elements and visualizes them. For
+this case an example reconstruction project is provided as shown at the top of the readme. 
 
 ```python
 from colmap_wrapper.colmap import COLMAP
 from colmap_wrapper.visualization import ColmapVisualization
+from colmap_wrapper.data.download import Dataset
 
-project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_images=True, image_resize=0.3)
+downloader = Dataset()
+downloader.download_bunny_dataset()
+
+project = COLMAP(project_path=downloader.file_path, load_images=True, image_resize=0.3)
+
+colmap_project = project.projects
 
 # Acess camera, images and sparse + dense point cloud
-camera = project.cameras
-images = project.images
-sparse = project.get_sparse()
-dense = project.get_dense()
+camera = colmap_project.cameras
+images = colmap_project.images
+sparse = colmap_project.get_sparse()
+dense = colmap_project.get_dense()
 
 # Visualize COLMAP Reconstruction
-project_vs = ColmapVisualization(project)
+project_vs = ColmapVisualization(colmap_project)
 project_vs.visualization(frustum_scale=0.7, image_type='image')
 ```
 
@@ -69,7 +76,17 @@ for COLMAP_MODEL in project.projects:
 ## References
 
 * [PyExifTool](https://github.com/sylikc/pyexiftool): A library to communicate with the [ExifTool](https://exiftool.org)
-  command- application. If you have trouble installing it please refer to the PyExifTool-Homepage.
+  command- application. If you have trouble installing it please refer to the PyExifTool-Homepage. 
+```bash
+# For Ubuntu users:
+wget https://exiftool.org/Image-ExifTool-12.51.tar.gz
+gzip -dc Image-ExifTool-12.51.tar.gz | tar -xf -
+cd Image-ExifTool-12.51
+perl Makefile.PL
+make test
+sudo make install
+```
+
 * To Visualize the Reconstruction on an OSM-Map the implementation
   from [GPS-visualization-Python](https://github.com/tisljaricleo/GPS-visualization-Python) is used. A guide to
   visualize gps data can be found

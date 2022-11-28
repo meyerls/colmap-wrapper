@@ -6,7 +6,7 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 """
 
 # Built-in/Generic Imports
-
+import warnings
 from pathlib import Path
 
 # Libs
@@ -18,16 +18,6 @@ import exiftool
 # Own modules
 from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
                                    read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
-
-
-# try:
-#    from colmap_wrapper.utils import *
-#    from colmap_wrapper.visualization import *
-#    from colmap_wrapper.bin import *
-# except ImportError:
-#    from .utils import *
-#    from .visualization import *
-#    from .bin import *
 
 
 class PhotogrammetrySoftware(object):
@@ -187,13 +177,17 @@ class COLMAPProject(PhotogrammetrySoftware):
             return {}
 
     def __read_exif_data(self):
-        for image_idx in self.images.keys():
-            self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
-                                                             self.images[
-                                                                 image_idx].name
-            with exiftool.ExifToolHelper() as et:
-                metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
-            self.images[image_idx].exifdata = metadata[0]
+        try:
+            for image_idx in self.images.keys():
+                self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
+                                                                 self.images[
+                                                                     image_idx].name
+                with exiftool.ExifToolHelper() as et:
+                    metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
+                self.images[image_idx].exifdata = metadata[0]
+        except exiftool.exceptions.ExifToolExecuteError as error:
+            # traceback.print_exc()
+            warnings.warn("Exif Data could not be read.")
 
     def __add_infos(self):
         """
@@ -335,12 +329,13 @@ class COLMAPProject(PhotogrammetrySoftware):
 
 
 if __name__ == '__main__':
-    # project = COLMAP(project_path='data/door', load_images=True, load_depth=True, image_resize=0.4)
-    # project = COLMAP(project_path='/home/luigi/Dropbox/07_data/CherrySLAM/test_sequences/01_easy/reco/',
+    from colmap_wrapper.data.download import Dataset
     from colmap_wrapper.visualization import ColmapVisualization
 
-    project = COLMAPProject(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
-                            dense_pc='fused.ply',
+    downloader = Dataset()
+    downloader.download_bunny_dataset()
+
+    project = COLMAPProject(project_path=downloader.file_path,
                             load_images=True,
                             load_depth=True,
                             image_resize=0.4)

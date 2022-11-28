@@ -8,3 +8,4 @@ See LICENSE file for more information.
 
 from colmap_wrapper.colmap import *
 from colmap_wrapper.visualization import *
+from colmap_wrapper.data import *

@@ -8,21 +8,23 @@ See LICENSE file for more information.
 
 # Built-in/Generic Imports
 import setuptools
+from os import path
 
-# with open("Readme.md", 'r') as f:
-#    long_description = f.read()
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'Readme.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setuptools.setup(
     name='colmap_wrapper',
-    version='1.1.2',
-    description='COLMAP Handler',
+    version='1.1.3',
+    description='COLMAP Wrapper',
     license="MIT",
-    long_description='',
-    long_description_content_type="text/markdown",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Lukas Meyer',
     author_email='lukas.meyer@fau.de',
     url="https://github.com/meyerls/colmap-wrapper",
-    packages=['colmap_wrapper.colmap', 'colmap_wrapper.visualization'],
+    packages=['colmap_wrapper.colmap', 'colmap_wrapper.visualization', 'colmap_wrapper.data'],
     install_requires=["numpy",
                       "pyexiftool",
                       "open3d",
