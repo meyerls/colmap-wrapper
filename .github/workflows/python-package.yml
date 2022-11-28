@@ -23,7 +23,7 @@ jobs:
           pip install .
       - name: 'Install ExifTools'
         run: |
-          wget https://exiftool.org/index.html
+          wget https://exiftool.org/Image-ExifTool-12.51.tar.gz
           gzip -dc Image-ExifTool-12.51.tar.gz | tar -xf -
           cd Image-ExifTool-12.51
           perl Makefile.PL
