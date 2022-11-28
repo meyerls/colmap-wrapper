@@ -25,3 +25,5 @@ if __name__ == '__main__':
     images = colmap_project.images
     sparse = colmap_project.get_sparse()
     dense = colmap_project.get_dense()
+
+    print('Finished')
