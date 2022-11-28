@@ -335,8 +335,8 @@ class COLMAPProject(PhotogrammetrySoftware):
 
 
 if __name__ == '__main__':
-    from colmap_wrapper import Dataset
-    from colmap_wrapper import ColmapVisualization
+    from colmap_wrapper.data.download import Dataset
+    from colmap_wrapper.visualization import ColmapVisualization
 
     downloader = Dataset()
     downloader.download_bunny_dataset()

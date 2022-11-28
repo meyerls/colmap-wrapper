@@ -23,6 +23,6 @@ jobs:
       - name: 'Test COLMAP wrapper'
         run: |
           ls -la
-          cd colmap_wrapper/colmap/
+          cd colmap_wrapper
           ls -la
-          python colmap.py
+          python test.py
