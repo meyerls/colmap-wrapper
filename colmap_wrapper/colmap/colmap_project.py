@@ -6,9 +6,9 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 """
 
 # Built-in/Generic Imports
-
+import warnings
 from pathlib import Path
-
+import traceback
 # Libs
 import pycolmap
 import numpy as np
@@ -187,13 +187,17 @@ class COLMAPProject(PhotogrammetrySoftware):
             return {}
 
     def __read_exif_data(self):
-        for image_idx in self.images.keys():
-            self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
-                                                             self.images[
-                                                                 image_idx].name
-            with exiftool.ExifToolHelper() as et:
-                metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
-            self.images[image_idx].exifdata = metadata[0]
+        try:
+            for image_idx in self.images.keys():
+                self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
+                                                                 self.images[
+                                                                     image_idx].name
+                with exiftool.ExifToolHelper() as et:
+                    metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
+                self.images[image_idx].exifdata = metadata[0]
+        except exiftool.exceptions.ExifToolExecuteError as error:
+            traceback.print_exc()
+            warnings.warn("Exif Data could not be read.")
 
     def __add_infos(self):
         """
