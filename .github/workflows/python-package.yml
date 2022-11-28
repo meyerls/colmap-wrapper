@@ -25,4 +25,4 @@ jobs:
           ls -la
           cd colmap_wrapper/colmap/
           ls -la
-          python3 colmap.py
+          python colmap.py
