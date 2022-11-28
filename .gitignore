@@ -3,7 +3,9 @@ data/
 test.py
 colmap_wrapper.egg-info
 dist
-
+!colmap_wrapper/data
+colmap_wrapper/data/bunny_reco
+*/**/*.zip
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
