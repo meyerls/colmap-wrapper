@@ -31,5 +31,5 @@ jobs:
           sudo make install
       - name: 'Test COLMAP wrapper'
         run: |
-          ls -la
+          exiftool -ver
           python colmap_wrapper/test.py
