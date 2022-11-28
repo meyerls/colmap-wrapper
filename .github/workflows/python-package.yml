@@ -1,4 +1,4 @@
-name: Python package
+name: Test COLMAP Wrapper
 
 on: [ push ]
 
@@ -16,11 +16,10 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: 'Install dependencies'
         run: |
-          python3 -m pip install --upgrade pip
-          python3 setup.py install
-          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
-      - name: Test colmap wrapper
+          python -m pip install --upgrade pip
+          pip install .
+      - name: 'Test COLMAP wrapper'
         run: |
           python3 colmap_wrapper/colmap/colmap.py
