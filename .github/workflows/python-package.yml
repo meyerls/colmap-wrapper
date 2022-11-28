@@ -1,7 +1,6 @@
 name: Test COLMAP Wrapper
 
 on: [ push ]
-
 jobs:
   build:
 
@@ -16,7 +15,7 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - run: git checkout meyerls
+      - run: git checkout ${{ github.ref_name }}
       - name: 'Install dependencies'
         run: |
           python -m pip install --upgrade pip
