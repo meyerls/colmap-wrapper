@@ -22,4 +22,7 @@ jobs:
           pip install .
       - name: 'Test COLMAP wrapper'
         run: |
-          python3 colmap_wrapper/colmap/colmap.py
+          ls -la
+          cd colmap_wrapper/colmap/
+          ls -la
+          python3 colmap.py
