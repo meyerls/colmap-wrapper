@@ -76,7 +76,17 @@ for COLMAP_MODEL in project.projects:
 ## References
 
 * [PyExifTool](https://github.com/sylikc/pyexiftool): A library to communicate with the [ExifTool](https://exiftool.org)
-  command- application. If you have trouble installing it please refer to the PyExifTool-Homepage.
+  command- application. If you have trouble installing it please refer to the PyExifTool-Homepage. 
+```bash
+# For Ubuntu users:
+wget https://exiftool.org/Image-ExifTool-12.51.tar.gz
+gzip -dc Image-ExifTool-12.51.tar.gz | tar -xf -
+cd Image-ExifTool-12.51
+perl Makefile.PL
+make test
+sudo make install
+```
+
 * To Visualize the Reconstruction on an OSM-Map the implementation
   from [GPS-visualization-Python](https://github.com/tisljaricleo/GPS-visualization-Python) is used. A guide to
   visualize gps data can be found

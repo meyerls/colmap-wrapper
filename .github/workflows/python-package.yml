@@ -28,7 +28,7 @@ jobs:
           cd Image-ExifTool-12.51
           perl Makefile.PL
           make test
-          make install
+          sudo make install
       - name: 'Test COLMAP wrapper'
         run: |
           ls -la
