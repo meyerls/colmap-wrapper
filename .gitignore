@@ -141,4 +141,4 @@ dmypy.json
 .settings/
 
 # Test Files
-test*.py
+#test*.py
