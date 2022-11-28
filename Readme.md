@@ -30,13 +30,18 @@ pip install colmap-wrapper
 
 ### Single Reconstruction
 
-To visualize a single reconstruction from COLMAP, the following code reads all colmap elements and visualizes them.
+To visualize a single reconstruction from COLMAP, the following code reads all colmap elements and visualizes them. For
+this case an example reconstruction project is provided as shown at the top of the readme. 
 
 ```python
 from colmap_wrapper.colmap import COLMAP
 from colmap_wrapper.visualization import ColmapVisualization
+from colmap_wrapper.data.download import Dataset
 
-project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_images=True, image_resize=0.3)
+downloader = Dataset()
+downloader.download_bunny_dataset()
+
+project = COLMAP(project_path=downloader.file_path, load_images=True, image_resize=0.3)
 
 # Acess camera, images and sparse + dense point cloud
 camera = project.cameras

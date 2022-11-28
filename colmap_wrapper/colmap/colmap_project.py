@@ -335,12 +335,13 @@ class COLMAPProject(PhotogrammetrySoftware):
 
 
 if __name__ == '__main__':
-    # project = COLMAP(project_path='data/door', load_images=True, load_depth=True, image_resize=0.4)
-    # project = COLMAP(project_path='/home/luigi/Dropbox/07_data/CherrySLAM/test_sequences/01_easy/reco/',
+    from colmap_wrapper.data.download import Dataset
     from colmap_wrapper.visualization import ColmapVisualization
 
-    project = COLMAPProject(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
-                            dense_pc='fused.ply',
+    downloader = Dataset()
+    downloader.download_bunny_dataset()
+
+    project = COLMAPProject(project_path=downloader.file_path,
                             load_images=True,
                             load_depth=True,
                             image_resize=0.4)

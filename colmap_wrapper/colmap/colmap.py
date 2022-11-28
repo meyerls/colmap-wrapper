@@ -5,7 +5,6 @@
 Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tree/97603b0d352df4e0da87e3ce822a9704ac437933
 """
 
-
 # Built-in/Generic Imports
 from pathlib import Path
 
@@ -13,7 +12,6 @@ from pathlib import Path
 import numpy as np
 
 # Own modules
-from colmap_wrapper.colmap import (read_array, generate_colmap_sparse_pc)
 from colmap_wrapper.colmap.colmap_project import COLMAPProject
 
 
@@ -76,8 +74,14 @@ if __name__ == '__main__':
     MODE = 'multi'
 
     if MODE == "single":
-        project = COLMAP(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
-                         dense_pc='fused.ply',
+
+        from colmap_wrapper.data.download import Dataset
+        from colmap_wrapper.visualization import ColmapVisualization
+
+        downloader = Dataset()
+        downloader.download_bunny_dataset()
+
+        project = COLMAP(project_path=downloader.file_path,
                          load_images=True,
                          load_depth=True,
                          image_resize=0.4)
@@ -105,6 +109,3 @@ if __name__ == '__main__':
             dense = COLMAP_MODEL.get_dense()
             project_vs = ColmapVisualization(colmap=COLMAP_MODEL)
             project_vs.visualization(frustum_scale=0.8, image_type='image')
-
-        # project.visualization(frustum_scale=0.8, image_type='image', model_idx=MODEL_IDX)
-        #project.visualization_all(frustum_scale=0.8, image_type='image')
