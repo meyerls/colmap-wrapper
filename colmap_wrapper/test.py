@@ -5,7 +5,6 @@ Copyright (c) 2022 Lukas Meyer
 Licensed under the MIT License.
 See LICENSE file for more information.
 """
-from colmap_wrapper.visualization import ColmapVisualization
 from colmap_wrapper.data.download import Dataset
 from colmap_wrapper.colmap.colmap import COLMAP
 
@@ -25,5 +24,3 @@ if __name__ == '__main__':
     sparse = colmap_project.get_sparse()
     dense = colmap_project.get_dense()
 
-    project_vs = ColmapVisualization(colmap=colmap_project)
-    project_vs.visualization(frustum_scale=0.8, image_type='image')

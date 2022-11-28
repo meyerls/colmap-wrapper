@@ -21,6 +21,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .
+      - name: 'Install ExifTools'
+        run: |
+          wget https://exiftool.org/index.html
+          gzip -dc Image-ExifTool-12.51.tar.gz | tar -xf -
+          cd Image-ExifTool-12.51
+          perl Makefile.PL
+          make test
+          make install
       - name: 'Test COLMAP wrapper'
         run: |
           ls -la
