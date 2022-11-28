@@ -7,6 +7,7 @@ See LICENSE file for more information.
 """
 from colmap_wrapper.visualization import ColmapVisualization
 from colmap_wrapper.data.download import Dataset
+from colmap_wrapper.colmap.colmap import COLMAP
 
 if __name__ == '__main__':
     downloader = Dataset()

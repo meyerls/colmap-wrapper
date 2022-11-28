@@ -8,8 +8,10 @@ See LICENSE file for more information.
 
 # Built-in/Generic Imports
 import setuptools
+from os import path
 
-with open("Readme.md", 'r') as f:
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'Readme.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setuptools.setup(
