@@ -71,7 +71,7 @@ class COLMAP(object):
 if __name__ == '__main__':
     from colmap_wrapper.visualization import ColmapVisualization
 
-    MODE = 'multi'
+    MODE = 'single'
 
     if MODE == "single":
 

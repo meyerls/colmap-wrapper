@@ -1,6 +1,6 @@
 name: Python package
 
-on: [push]
+on: [ push ]
 
 jobs:
   build:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9"]
+        python-version: [ "3.8", "3.9" ]
 
     steps:
       - uses: actions/checkout@v3
@@ -22,18 +22,19 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test colmap wrapper
         run: |
-          from colmap_wrapper.data.download import Dataset
-          from colmap_wrapper.visualization import ColmapVisualization
-      
-          downloader = Dataset()
-          downloader.download_bunny_dataset()
-      
-          project = COLMAPProject(project_path=downloader.file_path,
-                                  load_images=True,
-                                  load_depth=True,
-                                  image_resize=0.4)
-      
-          camera = project.cameras
-          images = project.images
-          sparse = project.get_sparse()
-          dense = project.get_dense()
+          python3 -c "
+from colmap_wrapper.data.download import Dataset
+from colmap_wrapper.visualization import ColmapVisualization
+from colmap_wrapper.colmap.colmap import COLMAP
+
+downloader = Dataset()
+downloader.download_bunny_dataset()
+
+project = COLMAP(project_path=downloader.file_path, load_images=True, load_depth=True, image_resize=0.4)
+
+colmap_project = project.projects
+
+camera = colmap_project.cameras
+images = colmap_project.images
+sparse = colmap_project.get_sparse()
+dense = colmap_project.get_dense()"

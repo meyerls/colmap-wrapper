@@ -43,14 +43,16 @@ downloader.download_bunny_dataset()
 
 project = COLMAP(project_path=downloader.file_path, load_images=True, image_resize=0.3)
 
+colmap_project = project.projects
+
 # Acess camera, images and sparse + dense point cloud
-camera = project.cameras
-images = project.images
-sparse = project.get_sparse()
-dense = project.get_dense()
+camera = colmap_project.cameras
+images = colmap_project.images
+sparse = colmap_project.get_sparse()
+dense = colmap_project.get_dense()
 
 # Visualize COLMAP Reconstruction
-project_vs = ColmapVisualization(project)
+project_vs = ColmapVisualization(colmap_project)
 project_vs.visualization(frustum_scale=0.7, image_type='image')
 ```
 
