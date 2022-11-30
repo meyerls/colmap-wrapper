@@ -108,9 +108,9 @@ class COLMAPProject(PhotogrammetrySoftware):
             if not self._dense_base_path.exists():
                 self._dense_base_path: Path = self._project_path
         elif isinstance(project_path, dict):
-            self._project_path: Path = project_path
-            self._dense_base_path: Path = self._project_path['dense']
-            self._sparse_base_path: Path = self._project_path['sparse']
+            self._project_path: Path = project_path['project_path']
+            self._dense_base_path: Path = project_path['dense']
+            self._sparse_base_path: Path = project_path['sparse']
         else:
             raise ValueError("{}".format(self._project_path))
 
@@ -177,17 +177,18 @@ class COLMAPProject(PhotogrammetrySoftware):
             return {}
 
     def __read_exif_data(self):
-        try:
-            for image_idx in self.images.keys():
-                self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
-                                                                 self.images[
-                                                                     image_idx].name
-                with exiftool.ExifToolHelper() as et:
-                    metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
-                self.images[image_idx].exifdata = metadata[0]
-        except exiftool.exceptions.ExifToolExecuteError as error:
-            # traceback.print_exc()
-            warnings.warn("Exif Data could not be read.")
+        if self.__project_ini_path.exists():
+            try:
+                for image_idx in self.images.keys():
+                    self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
+                                                                     self.images[
+                                                                         image_idx].name
+                    with exiftool.ExifToolHelper() as et:
+                        metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
+                    self.images[image_idx].exifdata = metadata[0]
+            except exiftool.exceptions.ExifToolExecuteError as error:
+                # traceback.print_exc()
+                warnings.warn("Exif Data could not be read.")
 
     def __add_infos(self):
         """

@@ -37,16 +37,28 @@ class COLMAP(object):
             raise ValueError('Colmap project structure: sparse folder (cameras, images, points3d) can not be found')
 
         project_structure = {}
-
-        for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
-            project_structure.update({project_index: {"sparse": sparse_project_path}})
-
         self._dense_base_path = self._project_path.joinpath('dense')
-        for project_index, dense_project_path in enumerate(list(self._dense_base_path.iterdir())):
-            project_structure[project_index].update({"dense": dense_project_path})
+
+        # Test if path is a file to get number of subprojects. Single Project with no numeric folder
+        if not all([path.is_dir() for path in self._sparse_base_path.iterdir()]):
+            project_structure.update({0: {
+                "project_path": self._project_path,
+                "sparse": self._sparse_base_path,
+                "dense": self._dense_base_path}})
+        else:
+            # In case of folder with reconstruction number after sparse (multiple projects) (e.g. 0,1,2)
+            for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
+                project_structure.update({project_index: {"sparse": sparse_project_path}})
+
+            for project_index, dense_project_path in enumerate(list(self._dense_base_path.iterdir())):
+                project_structure[project_index].update({"dense": dense_project_path})
+
+            for project_index in project_structure.keys():
+                project_structure[project_index].update({"project_path":  self._project_path})
 
         self.project_list = []
         self.model_ids = []
+
         for project_index in project_structure.keys():
             self.model_ids.append(project_index)
 
@@ -74,7 +86,7 @@ class COLMAP(object):
 if __name__ == '__main__':
     from colmap_wrapper.visualization import ColmapVisualization
 
-    MODE = 'single'
+    MODE = 'multi'
 
     if MODE == "single":
         from colmap_wrapper.data.download import Dataset
