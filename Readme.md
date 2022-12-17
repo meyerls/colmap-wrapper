@@ -43,7 +43,7 @@ downloader.download_bunny_dataset()
 
 project = COLMAP(project_path=downloader.file_path, load_images=True, image_resize=0.3)
 
-colmap_project = project.projects
+colmap_project = project.project
 
 # Acess camera, images and sparse + dense point cloud
 camera = colmap_project.cameras

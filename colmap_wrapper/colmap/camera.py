@@ -65,7 +65,6 @@ class ImageInformation(object):
         @param tvec: translation of the image/camera position
         @param camera_id: camera id
         @param image_name: name of th image
-        @param image_path: path to the image
         @param xys:
         @param point3D_ids:
         @param point3DiD_to_kpidx:

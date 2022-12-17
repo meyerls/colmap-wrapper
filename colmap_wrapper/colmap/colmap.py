@@ -63,20 +63,23 @@ class COLMAP(object):
             self.model_ids.append(project_index)
 
             project = COLMAPProject(project_path=project_structure[project_index],
-                                    dense_pc='fused.ply',
+                                    dense_pc=dense_pc,
                                     load_images=load_images,
                                     load_depth=load_depth,
-                                    image_resize=0.4,
+                                    image_resize=image_resize,
                                     bg_color=bg_color)
 
             self.project_list.append(project)
 
     @property
     def projects(self):
-        if len(self.project_list) == 1:
-            return self.project_list[0]
-        elif len(self.project_list) > 1:
-            return self.project_list
+        return self.project_list
+
+    @property
+    def project(self):
+        if len(self.project_list) <= 0:
+            return None
+        return self.project_list[0]
 
     @projects.setter
     def projects(self, projects):
@@ -99,7 +102,7 @@ if __name__ == '__main__':
                          load_depth=True,
                          image_resize=0.4)
 
-        colmap_project = project.projects
+        colmap_project = project.project
 
         camera = colmap_project.cameras
         images = colmap_project.images
