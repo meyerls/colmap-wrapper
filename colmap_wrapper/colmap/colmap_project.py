@@ -40,7 +40,6 @@ class PhotogrammetrySoftware(object):
 class COLMAPProject(PhotogrammetrySoftware):
     def __init__(self, project_path: [dict, str],
                  dense_pc: str = 'fused.ply',
-                 load_images: bool = True,
                  load_depth: bool = False,
                  image_resize: float = 1.,
                  bg_color: np.ndarray = np.asarray([1, 1, 1])):
@@ -80,7 +79,6 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         @param project_path: path to colmap project
         @param dense_pc: path to dense point cloud (Might be useful if pc has been renamed or deviades from fused.ply)
-        @param load_images: flag to load images.
         @param load_depth: flag to load depth images.
         @param image_resize: float to scale images if image size is to large for RAM storage
         @param bg_color: background color for visualization
@@ -138,7 +136,6 @@ class COLMAPProject(PhotogrammetrySoftware):
             else:
                 raise ValueError('Unkown file in sparse folder')
 
-        self.load_images: bool = load_images
         self.load_depth: bool = load_depth
         self.image_resize: float = image_resize
         self.vis_bg_color: np.ndarray = bg_color
@@ -337,7 +334,6 @@ if __name__ == '__main__':
     downloader.download_bunny_dataset()
 
     project = COLMAPProject(project_path=downloader.file_path,
-                            load_images=True,
                             load_depth=True,
                             image_resize=0.4)
 

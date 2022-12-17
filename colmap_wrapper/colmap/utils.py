@@ -8,23 +8,11 @@ See LICENSE file for more information.
 
 import numpy as np
 import open3d as o3d
-import PIL
 import exiftool
 
 
 # Own modules
 # ...
-
-def load_image(image_path: str) -> np.ndarray:
-    """
-    Load Image. This takes almost 50% of the time. Would be nice if it is possible to speed up this process. Any
-    ideas?
-
-    :param image_path:
-    :return:
-    """
-    return np.asarray(PIL.Image.open(image_path))
-
 
 def get_labeled_exif(exif):
     labeled = {}

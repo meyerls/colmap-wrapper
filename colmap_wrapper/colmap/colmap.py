@@ -21,7 +21,6 @@ from colmap_wrapper.colmap.colmap_project import COLMAPProject
 class COLMAP(object):
     def __init__(self, project_path: str,
                  dense_pc='fused.ply',
-                 load_images: bool = True,
                  load_depth: bool = False,
                  image_resize: float = 1.,
                  bg_color: np.ndarray = np.asarray([1, 1, 1])):
@@ -64,7 +63,6 @@ class COLMAP(object):
 
             project = COLMAPProject(project_path=project_structure[project_index],
                                     dense_pc=dense_pc,
-                                    load_images=load_images,
                                     load_depth=load_depth,
                                     image_resize=image_resize,
                                     bg_color=bg_color)
@@ -98,7 +96,6 @@ if __name__ == '__main__':
         downloader.download_bunny_dataset()
 
         project = COLMAP(project_path=downloader.file_path,
-                         load_images=True,
                          load_depth=True,
                          image_resize=0.4)
 
@@ -114,7 +111,6 @@ if __name__ == '__main__':
     elif MODE == "multi":
         project = COLMAP(project_path='/home/luigi/Dropbox/07_data/For5G/22_11_14/reco',
                          dense_pc='fused.ply',
-                         load_images=True,
                          load_depth=False,
                          image_resize=0.4)
 

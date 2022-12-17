@@ -15,7 +15,6 @@ if __name__ == '__main__':
     downloader.download_bunny_dataset()
 
     project = COLMAP(project_path=downloader.file_path,
-                     load_images=True,
                      load_depth=True,
                      image_resize=0.4)
 

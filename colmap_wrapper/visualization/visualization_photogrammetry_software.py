@@ -127,7 +127,6 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
 if __name__ == '__main__':
     project = COLMAP(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
                      dense_pc='fused.ply',
-                     load_images=True,
                      image_resize=0.4)
 
     project_vs = ColmapVisualization(colmap=project.project_list[0])
