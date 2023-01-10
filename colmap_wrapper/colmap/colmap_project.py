@@ -113,7 +113,10 @@ class COLMAPProject(PhotogrammetrySoftware):
                 self._dense_base_path: Path = self._project_path
         elif isinstance(project_path, dict):
             self._project_path: Path = project_path['project_path']
-            self._dense_base_path: Path = project_path['dense']
+            if not project_path['dense'].exists():
+                self._dense_base_path: Path = self._project_path
+            else:
+                self._dense_base_path: Path = project_path['dense']
             self._sparse_base_path: Path = project_path['sparse']
         else:
             raise ValueError("{}".format(self._project_path))
