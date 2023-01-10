@@ -11,10 +11,10 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Built-in/Generic Imports
 import struct
+import pathlib as path
 
 # Libs
 import numpy as np
-import pathlib as path
 
 # Own
 from colmap_wrapper.colmap.camera import (CAMERA_MODEL_IDS, Camera, ImageInformation, Point3D)
@@ -33,32 +33,6 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     return struct.unpack(endian_character + format_char_sequence, data)
 
 
-def write_cameras_binary(a):
-    """
-    void Reconstruction::WriteCamerasBinary(const std::string& path) const {
-      std::ofstream file(path, std::ios::trunc | std::ios::binary);
-      CHECK(file.is_open()) << path;
-
-      WriteBinaryLittleEndian<uint64_t>(&file, cameras_.size());
-
-      for (const auto& camera : cameras_) {
-        WriteBinaryLittleEndian<camera_t>(&file, camera.first);
-        WriteBinaryLittleEndian<int>(&file, camera.second.ModelId());
-        WriteBinaryLittleEndian<uint64_t>(&file, camera.second.Width());
-        WriteBinaryLittleEndian<uint64_t>(&file, camera.second.Height());
-        for (const double param : camera.second.Params()) {
-          WriteBinaryLittleEndian<double>(&file, param);
-        }
-      }
-    }
-
-    @param a:
-    @return:
-    """
-    pass
-    return
-
-
 def read_cameras_binary(path_to_model_file):
     """
     Original C++ Code can be found here: https://github.com/colmap/colmap/blob/dev/src/base/reconstruction.cc
@@ -69,7 +43,7 @@ def read_cameras_binary(path_to_model_file):
     with open(path_to_model_file, "rb") as fid:
         # First 8 bits contain information about the quantity of different camera models
         num_cameras = read_next_bytes(fid, 8, "Q")[0]
-        for _ in range(num_cameras): # camera_line_index
+        for _ in range(num_cameras):  # camera_line_index
             # Afterwards the 64 bits contain information about a specific camera
             camera_properties = read_next_bytes(fid, num_bytes=24, format_char_sequence="iiQQ")
             camera_id = camera_properties[0]
@@ -100,7 +74,7 @@ def read_images_binary(path_to_model_file):
     with open(path_to_model_file, "rb") as fid:
         # First 8 bits contain information about the quantity of different registrated camera models
         num_reg_images = read_next_bytes(fid, 8, "Q")[0]
-        for _ in range(num_reg_images): # image_index
+        for _ in range(num_reg_images):  # image_index
             # Image properties: (image_id, qvec, tvec, camera_id)
             binary_image_properties = read_next_bytes(
                 fid, num_bytes=64, format_char_sequence="idddddddi")
@@ -138,13 +112,13 @@ def read_images_binary(path_to_model_file):
                     pt3did_to_kpidx[ptid] = kpidx
 
             images[image_id] = ImageInformation(image_id=image_id,
-                                     qvec=qvec,
-                                     tvec=tvec,
-                                     camera_id=camera_id,
-                                     image_name=image_name,
-                                     xys=xys,
-                                     point3D_ids=point3D_ids,
-                                     point3DiD_to_kpidx=pt3did_to_kpidx)
+                                                qvec=qvec,
+                                                tvec=tvec,
+                                                camera_id=camera_id,
+                                                image_name=image_name,
+                                                xys=xys,
+                                                point3D_ids=point3D_ids,
+                                                point3DiD_to_kpidx=pt3did_to_kpidx)
     return images
 
 
@@ -183,13 +157,13 @@ def read_images_text(path):
                         pt3did_to_kpidx[ptid] = kpidx
 
                 images[image_id] = ImageInformation(image_id=image_id,
-                                         qvec=qvec,
-                                         tvec=tvec,
-                                         camera_id=camera_id,
-                                         image_name=image_name,
-                                         xys=xys,
-                                         point3D_ids=point3D_ids,
-                                         point3DiD_to_kpidx=pt3did_to_kpidx)
+                                                    qvec=qvec,
+                                                    tvec=tvec,
+                                                    camera_id=camera_id,
+                                                    image_name=image_name,
+                                                    xys=xys,
+                                                    point3D_ids=point3D_ids,
+                                                    point3DiD_to_kpidx=pt3did_to_kpidx)
     return images
 
 
@@ -203,7 +177,7 @@ def read_points3d_binary(path_to_model_file):
     with open(path_to_model_file, "rb") as fid:
         # Number of points in sparse model
         num_points = read_next_bytes(fid, 8, "Q")[0]
-        for _ in range(num_points): # point_line_index
+        for _ in range(num_points):  # point_line_index
             binary_point_line_properties = read_next_bytes(
                 fid, num_bytes=43, format_char_sequence="QdddBBBd")
             # Point ID
@@ -311,6 +285,7 @@ def read_cameras_text(path, int_id=True):
                                             params=params)
     return cameras
 
+
 def read_array(path):
     with open(path, "rb") as fid:
         width, height, channels = np.genfromtxt(fid, delimiter="&", max_rows=1,
@@ -327,3 +302,73 @@ def read_array(path):
         array = np.fromfile(fid, np.float32)
     array = array.reshape((width, height, channels), order="F")
     return np.transpose(array, (1, 0, 2)).squeeze()
+
+
+def write_cameras_text(cameras, path):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::WriteCamerasText(const std::string& path)
+        void Reconstruction::ReadCamerasText(const std::string& path)
+    """
+    HEADER = "# Camera list with one line of data per camera:\n" + \
+             "#   CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n" + \
+             "# Number of cameras: {}\n".format(len(cameras))
+    with open(path, "w") as fid:
+        fid.write(HEADER)
+        for _, cam in cameras.items():
+            to_write = [cam.id, cam.model, cam.width, cam.height, *cam.params]
+            line = " ".join([str(elem) for elem in to_write])
+            fid.write(line + "\n")
+
+
+def write_images_text(images, path):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadImagesText(const std::string& path)
+        void Reconstruction::WriteImagesText(const std::string& path)
+    """
+    if len(images) == 0:
+        mean_observations = 0
+    else:
+        mean_observations = sum((len(img.point3D_ids) for _, img in images.items())) / len(images)
+    HEADER = "# Image list with two lines of data per image:\n" + \
+             "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n" + \
+             "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" + \
+             "# Number of images: {}, mean observations per image: {}\n".format(len(images), mean_observations)
+
+    with open(path, "w") as fid:
+        fid.write(HEADER)
+        for _, img in images.items():
+            image_header = [img.id, *img.qvec, *img.tvec, img.camera_id, img.name]
+            first_line = " ".join(map(str, image_header))
+            fid.write(first_line + "\n")
+
+            points_strings = []
+            for xy, point3D_id in zip(img.xys, img.point3D_ids):
+                points_strings.append(" ".join(map(str, [*xy, point3D_id])))
+            fid.write(" ".join(points_strings) + "\n")
+
+
+def write_points3D_text(points3D, path):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadPoints3DText(const std::string& path)
+        void Reconstruction::WritePoints3DText(const std::string& path)
+    """
+    if len(points3D) == 0:
+        mean_track_length = 0
+    else:
+        mean_track_length = sum((len(pt.image_ids) for _, pt in points3D.items())) / len(points3D)
+    HEADER = "# 3D point list with one line of data per point:\n" + \
+             "#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, TRACK[] as (IMAGE_ID, POINT2D_IDX)\n" + \
+             "# Number of points: {}, mean track length: {}\n".format(len(points3D), mean_track_length)
+
+    with open(path, "w") as fid:
+        fid.write(HEADER)
+        for _, pt in points3D.items():
+            point_header = [pt.id, *pt.xyz, *pt.rgb, pt.error]
+            fid.write(" ".join(map(str, point_header)) + " ")
+            track_strings = []
+            for image_id, point2D in zip(pt.image_ids, pt.point2D_idxs):
+                track_strings.append(" ".join(map(str, [image_id, point2D])))
+            fid.write(" ".join(track_strings) + "\n")

@@ -24,8 +24,10 @@ class COLMAP(object):
                  load_images: bool = True,
                  load_depth: bool = False,
                  image_resize: float = 1.,
-                 bg_color: np.ndarray = np.asarray([1, 1, 1])):
+                 bg_color: np.ndarray = np.asarray([1, 1, 1]),
+                 exif_read=False):
 
+        self.exif_read = exif_read
         self.vis_bg_color = bg_color
         self._project_path: Path = Path(project_path)
 
@@ -63,11 +65,12 @@ class COLMAP(object):
             self.model_ids.append(project_index)
 
             project = COLMAPProject(project_path=project_structure[project_index],
-                                    dense_pc='fused.ply',
+                                    dense_pc=dense_pc,
                                     load_images=load_images,
                                     load_depth=load_depth,
                                     image_resize=0.4,
-                                    bg_color=bg_color)
+                                    bg_color=bg_color,
+                                    exif_read=self.exif_read)
 
             self.project_list.append(project)
 

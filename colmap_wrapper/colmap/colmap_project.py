@@ -43,7 +43,8 @@ class COLMAPProject(PhotogrammetrySoftware):
                  load_images: bool = True,
                  load_depth: bool = False,
                  image_resize: float = 1.,
-                 bg_color: np.ndarray = np.asarray([1, 1, 1])):
+                 bg_color: np.ndarray = np.asarray([1, 1, 1]),
+                 exif_read=False):
         """
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
@@ -88,6 +89,9 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
 
+        # Flag to read exif data (takes long for large image sets)
+        self.exif_read = exif_read
+
         # Search and Set Paths
         if isinstance(project_path, str):
             self._project_path: Path = Path(project_path)
@@ -109,7 +113,10 @@ class COLMAPProject(PhotogrammetrySoftware):
                 self._dense_base_path: Path = self._project_path
         elif isinstance(project_path, dict):
             self._project_path: Path = project_path['project_path']
-            self._dense_base_path: Path = project_path['dense']
+            if not project_path['dense'].exists():
+                self._dense_base_path: Path = self._project_path
+            else:
+                self._dense_base_path: Path = project_path['dense']
             self._sparse_base_path: Path = project_path['sparse']
         else:
             raise ValueError("{}".format(self._project_path))
@@ -177,18 +184,19 @@ class COLMAPProject(PhotogrammetrySoftware):
             return {}
 
     def __read_exif_data(self):
-        if self.__project_ini_path.exists():
-            try:
-                for image_idx in self.images.keys():
-                    self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
-                                                                     self.images[
-                                                                         image_idx].name
-                    with exiftool.ExifToolHelper() as et:
-                        metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
-                    self.images[image_idx].exifdata = metadata[0]
-            except exiftool.exceptions.ExifToolExecuteError as error:
-                # traceback.print_exc()
-                warnings.warn("Exif Data could not be read.")
+        if self.exif_read:
+            if self.__project_ini_path.exists():
+                try:
+                    for image_idx in self.images.keys():
+                        self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
+                                                                         self.images[
+                                                                             image_idx].name
+                        with exiftool.ExifToolHelper() as et:
+                            metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
+                        self.images[image_idx].exifdata = metadata[0]
+                except exiftool.exceptions.ExifToolExecuteError as error:
+                    # traceback.print_exc()
+                    warnings.warn("Exif Data could not be read.")
 
     def __add_infos(self):
         """
