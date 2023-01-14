@@ -67,7 +67,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-                image = (image / self.max_depth_scaler * 255).astype(np.uint8)
+                image = (image / self.photogrammetry_software.max_depth_scaler * 255).astype(np.uint8)
                 image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
             elif image_type == 'depth_photo':
                 import cv2
@@ -77,6 +77,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+                image = (image / self.photogrammetry_software.max_depth_scaler_photometric * 255).astype(np.uint8)
 
             line_set, sphere, mesh = draw_camera_viewport(
                 extrinsics=self.photogrammetry_software.images[image_idx].extrinsics,
