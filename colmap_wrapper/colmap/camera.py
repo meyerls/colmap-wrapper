@@ -115,7 +115,7 @@ class ImageInformation(object):
         #        M[:3, :3] = Rwc
         #        M[:3, 3] = twc
 
-        #return M
+        # return M
 
     def set_extrinsics(self, T: [None, np.ndarray] = None):
         if isinstance(T, type(None)):

@@ -16,7 +16,7 @@ with open(path.join(this_directory, 'Readme.md'), encoding='utf-8') as f:
 
 setuptools.setup(
     name='colmap_wrapper',
-    version='1.1.4',
+    version='1.1.5',
     description='COLMAP Wrapper',
     license="MIT",
     long_description=long_description,

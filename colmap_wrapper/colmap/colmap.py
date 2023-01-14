@@ -23,8 +23,10 @@ class COLMAP(object):
                  dense_pc='fused.ply',
                  load_depth: bool = False,
                  image_resize: float = 1.,
-                 bg_color: np.ndarray = np.asarray([1, 1, 1])):
+                 bg_color: np.ndarray = np.asarray([1, 1, 1]),
+                 exif_read=False):
 
+        self.exif_read = exif_read
         self.vis_bg_color = bg_color
         self._project_path: Path = Path(project_path)
 
@@ -66,6 +68,7 @@ class COLMAP(object):
                                     load_depth=load_depth,
                                     image_resize=image_resize,
                                     bg_color=bg_color)
+                                    exif_read=self.exif_read)
 
             self.project_list.append(project)
 
