@@ -67,7 +67,7 @@ class COLMAP(object):
                                     dense_pc=dense_pc,
                                     load_depth=load_depth,
                                     image_resize=image_resize,
-                                    bg_color=bg_color)
+                                    bg_color=bg_color,
                                     exif_read=self.exif_read)
 
             self.project_list.append(project)
