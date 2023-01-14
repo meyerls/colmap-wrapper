@@ -18,7 +18,7 @@ if __name__ == '__main__':
                      load_depth=True,
                      image_resize=0.4)
 
-    colmap_project = project.projects
+    colmap_project = project.project
 
     camera = colmap_project.cameras
     images = colmap_project.images
