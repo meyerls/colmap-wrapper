@@ -41,9 +41,9 @@ from colmap_wrapper.data.download import Dataset
 downloader = Dataset()
 downloader.download_bunny_dataset()
 
-project = COLMAP(project_path=downloader.file_path, load_images=True, image_resize=0.3)
+project = COLMAP(project_path=downloader.file_path, image_resize=0.3)
 
-colmap_project = project.projects
+colmap_project = project.project
 
 # Acess camera, images and sparse + dense point cloud
 camera = colmap_project.cameras
@@ -65,7 +65,7 @@ reconstructions can be called as shown below.
 from colmap_wrapper.colmap import COLMAP
 from colmap_wrapper.visualization import ColmapVisualization
 
-project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", load_images=True, image_resize=0.3)
+project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", image_resize=0.3)
 
 # project.projects is a list containing single colmap projects
 for COLMAP_MODEL in project.projects:
