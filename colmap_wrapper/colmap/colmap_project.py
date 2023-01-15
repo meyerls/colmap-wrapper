@@ -126,8 +126,8 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
         
+        self.output_status_function = output_status_function
         if output_status_function:
-            self.output_status_function = output_status_function
             self.output_status_function(LoadElementStatus(element=LoadElement.PATHS_AND_ATTRIBUTES, project=self, finished=False))
         
         # Flag to read exif data (takes long for large image sets)
@@ -196,7 +196,7 @@ class COLMAPProject(PhotogrammetrySoftware):
         
         self.read()
         
-        if output_status_function:
+        if output_status_function: # Maybe not reset?
             self.output_status_function = None
 
     def read(self):
@@ -346,6 +346,7 @@ class COLMAPProject(PhotogrammetrySoftware):
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.CAMERAS, project=self, finished=False))
         
+        
         reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
         self.cameras = {}
         for camera_id, camera in reconstruction.cameras.items():
@@ -374,6 +375,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                                    params=params)
 
             self.cameras.update({camera_id: camera_params})
+        
         
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.CAMERAS, project=self, finished=True))
