@@ -10,6 +10,8 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Built-in/Generic Imports
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import cpu_count
 
 # Libs
 import numpy as np
@@ -24,7 +26,8 @@ class COLMAP(object):
                  load_depth: bool = False,
                  image_resize: float = 1.,
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
-                 exif_read=False):
+                 exif_read=False,
+                 output_status_function=None):
 
         self.exif_read = exif_read
         self.vis_bg_color = bg_color
@@ -59,18 +62,27 @@ class COLMAP(object):
 
         self.project_list = []
         self.model_ids = []
-
+        
+        n_cores = cpu_count()
+        executor = ThreadPoolExecutor(max_workers=n_cores)
+        
         for project_index in project_structure.keys():
             self.model_ids.append(project_index)
-
-            project = COLMAPProject(project_path=project_structure[project_index],
-                                    dense_pc=dense_pc,
-                                    load_depth=load_depth,
-                                    image_resize=image_resize,
-                                    bg_color=bg_color,
-                                    exif_read=self.exif_read)
-
-            self.project_list.append(project)
+            
+            def run():
+                project = COLMAPProject(project_path=project_structure[project_index],
+                                        dense_pc=dense_pc,
+                                        load_depth=load_depth,
+                                        image_resize=image_resize,
+                                        bg_color=bg_color,
+                                        exif_read=self.exif_read,
+                                        output_status_function=output_status_function)
+                
+                self.project_list.append(project)
+            
+            executor.submit(run)
+        
+        executor.shutdown(wait=True)
 
     @property
     def projects(self):
