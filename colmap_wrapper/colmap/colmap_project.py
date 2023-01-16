@@ -243,6 +243,9 @@ class COLMAPProject(PhotogrammetrySoftware):
             return {}
 
     def __read_exif_data(self):
+        if self.output_status_function:
+            self.output_status_function(LoadElementStatus(element=LoadElement.EXIF_DATA, project=self, finished=False))
+        
         if self.exif_read:
             if self.__project_ini_path.exists():
                 try:
@@ -256,6 +259,9 @@ class COLMAPProject(PhotogrammetrySoftware):
                 except exiftool.exceptions.ExifToolExecuteError as error:
                     # traceback.print_exc()
                     warnings.warn("Exif Data could not be read.")
+        
+        if self.output_status_function:
+            self.output_status_function(LoadElementStatus(element=LoadElement.EXIF_DATA, project=self, finished=True))
 
     def __add_infos(self, executor: ThreadPoolExecutor = None):
         """
