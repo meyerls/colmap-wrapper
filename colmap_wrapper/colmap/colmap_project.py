@@ -21,6 +21,7 @@ import exiftool
 # Own modules
 from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
                                    read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
+from colmap_wrapper.colmap.bin import read_cameras_text
 
 
 class LoadElement(Enum):
@@ -164,6 +165,8 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         # Loads undistorted images
         self._src_image_path: Path = self._dense_base_path.joinpath('images')
+        if not self._src_image_path.exists():
+            self._src_image_path: Path = self._project_path.joinpath('images')
         self._fused_path: Path = self._dense_base_path.joinpath(dense_pc)
         self._stereo_path: Path = self._dense_base_path.joinpath('stereo')
         self._depth_image_path: Path = self._stereo_path.joinpath('depth_maps')
@@ -352,35 +355,66 @@ class COLMAPProject(PhotogrammetrySoftware):
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.CAMERAS, project=self, finished=False))
         
-        
-        reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
-        self.cameras = {}
-        for camera_id, camera in reconstruction.cameras.items():
-            if camera.model_name == 'SIMPLE_RADIAL':
-                params = np.asarray([camera.params[0],  # fx
-                                     camera.params[0],  # fy
-                                     camera.params[1],  # cx
-                                     camera.params[2],  # cy
-                                     camera.params[3]])  # k1
-                # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
+        if list(self._sparse_base_path.glob('*.txt')).__len__() > 0:
+            cameras = read_cameras_text(self._sparse_base_path / 'cameras.txt')
 
-            elif camera.model_name == 'PINHOLE':
-                params = np.asarray([camera.params[0],  # fx
-                                     camera.params[1],  # fy
-                                     camera.params[2],  # cx
-                                     camera.params[3],  # cy
-                                     0])  # k1
+            self.cameras = {}
+            for camera_id, camera in cameras.items():
+                if camera.model == 'SIMPLE_RADIAL':
+                    params = np.asarray([camera.params[0],  # fx
+                                         camera.params[0],  # fy
+                                         camera.params[1],  # cx
+                                         camera.params[2],  # cy
+                                         camera.params[3]])  # k1
+                    # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
 
-            else:
-                raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
+                elif camera.model == 'PINHOLE':
+                    params = np.asarray([camera.params[0],  # fx
+                                         camera.params[1],  # fy
+                                         camera.params[2],  # cx
+                                         camera.params[3],  # cy
+                                         0])  # k1
 
-            camera_params = Camera(id=camera.camera_id,
-                                   model=camera.model_name,
-                                   width=camera.width,
-                                   height=camera.height,
-                                   params=params)
+                else:
+                    raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
 
-            self.cameras.update({camera_id: camera_params})
+                camera_params = Camera(id=camera.id,
+                                       model=camera.model,
+                                       width=camera.width,
+                                       height=camera.height,
+                                       params=params)
+
+                self.cameras.update({camera_id: camera_params})
+
+        else:
+            reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
+            self.cameras = {}
+            for camera_id, camera in reconstruction.cameras.items():
+                if camera.model_name == 'SIMPLE_RADIAL':
+                    params = np.asarray([camera.params[0],  # fx
+                                         camera.params[0],  # fy
+                                         camera.params[1],  # cx
+                                         camera.params[2],  # cy
+                                         camera.params[3]])  # k1
+                    # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
+
+                elif camera.model_name == 'PINHOLE':
+                    params = np.asarray([camera.params[0],  # fx
+                                         camera.params[1],  # fy
+                                         camera.params[2],  # cx
+                                         camera.params[3],  # cy
+                                         0])  # k1
+
+                else:
+                    raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
+
+                camera_params = Camera(id=camera.camera_id,
+                                       model=camera.model_name,
+                                       width=camera.width,
+                                       height=camera.height,
+                                       params=params)
+
+                self.cameras.update({camera_id: camera_params})
         
         
         if self.output_status_function:

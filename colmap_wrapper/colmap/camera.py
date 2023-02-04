@@ -98,9 +98,13 @@ class ImageInformation(object):
 
     def getData(self, downsample: float = 1.0) -> np.ndarray:
         if self.__image is None:
-            with Image.open(self.path) as img:
-                width, height = img.size
-                img = img.resize((int(width * downsample), int(height * downsample)))
+            try:
+                with Image.open(self.path) as img:
+                        width, height = img.size
+                        img = img.resize((int(width * downsample), int(height * downsample)))
+                return np.asarray(img).astype(np.uint8)
+            except FileNotFoundError:
+                img = np.zeros((400, 400))
 
                 return np.asarray(img).astype(np.uint8)
 
