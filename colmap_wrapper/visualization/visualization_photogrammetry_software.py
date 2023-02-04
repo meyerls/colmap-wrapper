@@ -8,6 +8,7 @@ See LICENSE file for more information.
 
 import open3d as o3d
 import numpy as np
+from tqdm import tqdm
 
 from colmap_wrapper.colmap import COLMAP
 from colmap_wrapper.colmap.colmap_project import PhotogrammetrySoftware
@@ -53,9 +54,17 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         @param image_type:
         @type frustum_scale: object
         """
+        #aa = []
+        #for image_idx in tqdm(self.photogrammetry_software.images.keys()):
+        #    aa.append(self.photogrammetry_software.images[image_idx].extrinsics[:3, 3])
+#
+        #a = o3d.geometry.PointCloud()
+        #a.points = o3d.utility.Vector3dVector(np.vstack(aa))
+        #coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(origin=np.asarray([0., 0., 0.]))
+        #o3d.visualization.draw_geometries([coordinate_frame, a])
 
         geometries = []
-        for image_idx in self.photogrammetry_software.images.keys():
+        for image_idx in tqdm(self.photogrammetry_software.images.keys()):
 
             if image_type == 'image':
                 image = self.photogrammetry_software.images[image_idx].getData(
