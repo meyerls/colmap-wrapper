@@ -10,10 +10,6 @@ import numpy as np
 import open3d as o3d
 import exiftool
 
-
-# Own modules
-# ...
-
 def get_labeled_exif(exif):
     labeled = {}
     for (key, val) in exif.items():

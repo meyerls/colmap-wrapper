@@ -19,7 +19,7 @@ import open3d as o3d
 import exiftool
 
 # Own modules
-from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
+from colmap_wrapper.colmap import (Camera, Intrinsics, read_images_text, read_points3D_text,
                                    read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
 from colmap_wrapper.colmap.bin import read_cameras_text
 
@@ -32,7 +32,6 @@ class LoadElement(Enum):
     DENSE_MODEL = 4
     DEPTH_STRUCTURE = 5
     EXIF_DATA = 6
-    DEPTH_IMAGE = 7
     IMAGE_INFO = 8
 
 class LoadElementStatus:
@@ -79,8 +78,6 @@ class PhotogrammetrySoftware(object):
 class COLMAPProject(PhotogrammetrySoftware):
     def __init__(self, project_path: [dict, str],
                  dense_pc: str = 'fused.ply',
-                 load_depth: bool = False,
-                 image_resize: float = 1.,
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  exif_read=False,
                  output_status_function=None):
@@ -120,8 +117,6 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         @param project_path: path to colmap project
         @param dense_pc: path to dense point cloud (Might be useful if pc has been renamed or deviades from fused.ply)
-        @param load_depth: flag to load depth images.
-        @param image_resize: float to scale images if image size is to large for RAM storage
         @param bg_color: background color for visualization
         """
 
@@ -189,8 +184,6 @@ class COLMAPProject(PhotogrammetrySoftware):
             else:
                 raise ValueError('Unkown file in sparse folder')
 
-        self.load_depth: bool = load_depth
-        self.image_resize: float = image_resize
         self.vis_bg_color: np.ndarray = bg_color
         self.project_ini = self.__read_project_init_file()
         
@@ -268,70 +261,24 @@ class COLMAPProject(PhotogrammetrySoftware):
 
     def __add_infos(self, executor: ThreadPoolExecutor = None):
         """
-        Loads rgb image and depth images from path and adds it to the Image object.
-
-        @warning: this might exceed your storage! Think about adjusting the scaling parameter.
-
         @return:
         """
-                
-        self.max_depth_scaler = 0
-        self.max_depth_scaler_photometric = 0
         
         current_image = 0
         count_images = len(self.images)
         
         for image_idx in self.images.keys():
             def run(image_idx=image_idx, current_image=current_image, count_images=count_images):
-                self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
-    
-                if self.load_depth:
-                    if self.output_status_function:
-                        self.output_status_function(LoadElementStatus(element=LoadElement.DEPTH_IMAGE, project=self, finished=False, idx=image_idx, current_id=current_image, max_id=count_images))
-                    
-                    
-                    self.images[image_idx].depth_image_geometric = read_array(
-                        path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
-    
-                    # print(self.images[image_idx].name)
-                    # print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
-                    # print('\n')
-    
-                    min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
-    
-                    if max_depth > self.max_depth_scaler:
-                        self.max_depth_scaler = max_depth
-    
-                    self.images[image_idx].depth_image_photometric = read_array(
-                        path=next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
-    
-                    min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_photometric, [5, 95])
-    
-                    if max_depth > self.max_depth_scaler_photometric:
-                        self.max_depth_scaler_photometric = max_depth
-                    
-                    
-                    if self.output_status_function:
-                        self.output_status_function(LoadElementStatus(element=LoadElement.DEPTH_IMAGE, project=self, finished=True, idx=image_idx, current_id=current_image, max_id=count_images))
-                    
-                else:
-                    self.images[image_idx].depth_image_geometric = None
-                    self.images[image_idx].depth_path_photometric = None
-                # self.images[image_idx].normal_image = self.__read_depth_images
-                
-                
                 if self.output_status_function:
                     self.output_status_function(LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=False, idx=image_idx, current_id=current_image, max_id=count_images))
                 
                 
+                self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
+                
+                self.images[image_idx].depth_image_geometric_path = next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None)
+                self.images[image_idx].depth_image_photometric_path = next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None)
+                
                 self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
-    
-                # Fixing Strange Error when cy is negative
-                if self.images[image_idx].intrinsics.cx < 0:
-                    pass
-    
-                if self.images[image_idx].intrinsics.cy < 0:
-                    pass
                 
                 
                 if self.output_status_function:
@@ -509,14 +456,12 @@ if __name__ == '__main__':
     downloader = Dataset()
     downloader.download_bunny_dataset()
 
-    project = COLMAPProject(project_path=downloader.file_path,
-                            load_depth=True,
-                            image_resize=0.4)
+    project = COLMAPProject(project_path=downloader.file_path)
 
     camera = project.cameras
     images = project.images
     sparse = project.get_sparse()
     dense = project.get_dense()
 
-    project_vs = ColmapVisualization(colmap=project)
+    project_vs = ColmapVisualization(colmap=project,image_resize=0.4)
     project_vs.visualization(frustum_scale=0.8, image_type='image')

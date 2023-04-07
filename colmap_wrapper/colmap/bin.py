@@ -288,8 +288,7 @@ def read_cameras_text(path, int_id=True):
 
 def read_array(path):
     with open(path, "rb") as fid:
-        width, height, channels = np.genfromtxt(fid, delimiter="&", max_rows=1,
-                                                usecols=(0, 1, 2), dtype=int)
+        width, height, channels = np.genfromtxt(fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int)
         fid.seek(0)
         num_delimiter = 0
         byte = fid.read(1)

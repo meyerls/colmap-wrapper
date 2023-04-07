@@ -12,7 +12,7 @@ import collections
 import numpy as np
 from PIL import Image
 
-from colmap_wrapper.colmap import (qvec2rotmat)
+from colmap_wrapper.colmap import qvec2rotmat
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
 Camera = collections.namedtuple("Camera", ["id", "model", "width", "height", "params"])
@@ -81,8 +81,10 @@ class ImageInformation(object):
         self.point3DiD_to_kpidx = point3DiD_to_kpidx
 
         self.intrinsics = None
-
+        
         self.path = None
+        self.depth_image_geometric_path = None
+        self.depth_image_photometric_path = None
 
         self.__image = None
 
@@ -95,7 +97,7 @@ class ImageInformation(object):
     @image.setter
     def image(self, image: np.ndarray):
         self.__image = image
-
+    
     def getData(self, downsample: float = 1.0) -> np.ndarray:
         if self.__image is None:
             try:
@@ -109,7 +111,21 @@ class ImageInformation(object):
                 return np.asarray(img).astype(np.uint8)
 
         return self.__image
-
+    
+    @property
+    def depth_image_geometric(self):
+        if self.depth_image_geometric_path == None:
+            return None
+        from colmap_wrapper.colmap import read_array
+        return read_array(path=self.depth_image_geometric_path)
+    
+    @property
+    def depth_image_photometric(self):
+        if self.depth_image_photometric_path == None:
+            return None
+        from colmap_wrapper.colmap import read_array
+        return read_array(path=self.depth_image_photometric_path)
+    
         #    @property
         #    def extrinsics(self) -> np.ndarray:
         #        Rwc = self.Rwc()
