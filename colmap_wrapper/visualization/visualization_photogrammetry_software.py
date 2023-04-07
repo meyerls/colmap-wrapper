@@ -16,10 +16,11 @@ from colmap_wrapper.visualization import draw_camera_viewport
 
 
 class PhotogrammetrySoftwareVisualization():
-    def __init__(self, photogrammetry_software: PhotogrammetrySoftware):
+    def __init__(self, photogrammetry_software: PhotogrammetrySoftware, image_resize: float = 0.3):
         self.photogrammetry_software = photogrammetry_software
-
         self.geometries = []
+        
+        self.image_resize: float = image_resize
 
     def show_sparse(self):
         o3d.visualization.draw_geometries([self.photogrammetry_software.get_sparse()])
@@ -29,8 +30,8 @@ class PhotogrammetrySoftwareVisualization():
 
 
 class ColmapVisualization(PhotogrammetrySoftwareVisualization):
-    def __init__(self, colmap: COLMAP, bg_color: np.ndarray = np.asarray([1, 1, 1])):
-        super().__init__(colmap)
+    def __init__(self, colmap: COLMAP, bg_color: np.ndarray = np.asarray([1, 1, 1]), image_resize: float = 0.3):
+        super().__init__(colmap, image_resize=image_resize)
 
         self.vis_bg_color = bg_color
 
@@ -67,8 +68,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         for image_idx in tqdm(self.photogrammetry_software.images.keys()):
 
             if image_type == 'image':
-                image = self.photogrammetry_software.images[image_idx].getData(
-                    self.photogrammetry_software.image_resize)
+                image = self.photogrammetry_software.images[image_idx].getData(self.image_resize)
             elif image_type == 'depth_geo':
                 import cv2
                 image = self.photogrammetry_software.images[image_idx].depth_image_geometric
@@ -76,7 +76,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-                image = (image / self.photogrammetry_software.max_depth_scaler * 255).astype(np.uint8)
+                image = (image / self.photogrammetry_software.max_depth_scaler * 255).astype(np.uint8) # TODO max_depth_scaler
                 image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
             elif image_type == 'depth_photo':
                 import cv2
@@ -86,7 +86,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-                image = (image / self.photogrammetry_software.max_depth_scaler_photometric * 255).astype(np.uint8)
+                image = (image / self.photogrammetry_software.max_depth_scaler_photometric * 255).astype(np.uint8) # TODO max_depth_scaler_photometric
 
             line_set, sphere, mesh = draw_camera_viewport(
                 extrinsics=self.photogrammetry_software.images[image_idx].extrinsics,
@@ -136,8 +136,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
 
 if __name__ == '__main__':
     project = COLMAP(project_path='/home/luigi/Dropbox/07_data/misc/bunny_data/reco_DocSem2',
-                     dense_pc='fused.ply',
-                     image_resize=0.4)
+                     dense_pc='fused.ply')
 
-    project_vs = ColmapVisualization(colmap=project.project_list[0])
+    project_vs = ColmapVisualization(colmap=project.project_list[0], image_resize=0.4)
     project_vs.visualization(frustum_scale=0.8, image_type='image')

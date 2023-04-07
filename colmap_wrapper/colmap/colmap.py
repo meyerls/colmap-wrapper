@@ -23,8 +23,6 @@ from colmap_wrapper.colmap.colmap_project import COLMAPProject
 class COLMAP(object):
     def __init__(self, project_path: str,
                  dense_pc='fused.ply',
-                 load_depth: bool = False,
-                 image_resize: float = 1.,
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  exif_read=False,
                  output_status_function=None):
@@ -72,10 +70,8 @@ class COLMAP(object):
             def run():
                 project = COLMAPProject(project_path=project_structure[project_index],
                                         dense_pc=dense_pc,
-                                        load_depth=load_depth,
-                                        image_resize=image_resize,
                                         bg_color=bg_color,
-                                        exif_read=self.exif_read,
+                                        exif_read=exif_read,
                                         output_status_function=output_status_function)
                 
                 self.project_list.append(project)
@@ -110,9 +106,7 @@ if __name__ == '__main__':
         downloader = Dataset()
         downloader.download_bunny_dataset()
 
-        project = COLMAP(project_path=downloader.file_path,
-                         load_depth=True,
-                         image_resize=0.4)
+        project = COLMAP(project_path=downloader.file_path)
 
         colmap_project = project.project
 
@@ -121,18 +115,16 @@ if __name__ == '__main__':
         sparse = colmap_project.get_sparse()
         dense = colmap_project.get_dense()
 
-        project_vs = ColmapVisualization(colmap=colmap_project)
+        project_vs = ColmapVisualization(colmap=colmap_project, image_resize=0.4)
         project_vs.visualization(frustum_scale=0.8, image_type='image')
     elif MODE == "multi":
         project = COLMAP(project_path='/home/luigi/Dropbox/07_data/For5G/22_11_14/reco',
-                         dense_pc='fused.ply',
-                         load_depth=False,
-                         image_resize=0.4)
+                         dense_pc='fused.ply')
 
         for model_idx, COLMAP_MODEL in enumerate(project.projects):
             camera = COLMAP_MODEL.cameras
             images = COLMAP_MODEL.images
             sparse = COLMAP_MODEL.get_sparse()
             dense = COLMAP_MODEL.get_dense()
-            project_vs = ColmapVisualization(colmap=COLMAP_MODEL)
+            project_vs = ColmapVisualization(colmap=COLMAP_MODEL, image_resize=0.4)
             project_vs.visualization(frustum_scale=0.8, image_type='image')
