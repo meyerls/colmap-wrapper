@@ -71,7 +71,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image = self.photogrammetry_software.images[image_idx].getData(self.image_resize)
             elif image_type == 'depth_geo':
                 import cv2
-                image = self.photogrammetry_software.images[image_idx].depth_image_geometric
+                image = self.photogrammetry_software.images[image_idx].depth_image_geometric.getData()
                 min_depth, max_depth = np.percentile(image, [5, 95])
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
@@ -80,7 +80,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
             elif image_type == 'depth_photo':
                 import cv2
-                image = self.photogrammetry_software.images[image_idx].depth_image_photometric
+                image = self.photogrammetry_software.images[image_idx].depth_image_photometric.getData()
                 min_depth, max_depth = np.percentile(
                     image, [5, 95])
                 image[image < min_depth] = min_depth

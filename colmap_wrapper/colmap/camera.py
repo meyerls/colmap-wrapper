@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 
 from colmap_wrapper.colmap import qvec2rotmat
+from numpy.distutils.fcompiler import none
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
 Camera = collections.namedtuple("Camera", ["id", "model", "width", "height", "params"])
@@ -83,8 +84,8 @@ class ImageInformation(object):
         self.intrinsics = None
         
         self.path = None
-        self.depth_image_geometric_path = None
-        self.depth_image_photometric_path = None
+        self.depth_image_geometric = None
+        self.depth_image_photometric = None
 
         self.__image = None
 
@@ -111,20 +112,6 @@ class ImageInformation(object):
                 return np.asarray(img).astype(np.uint8)
 
         return self.__image
-    
-    @property
-    def depth_image_geometric(self):
-        if self.depth_image_geometric_path == None:
-            return None
-        from colmap_wrapper.colmap import read_array
-        return read_array(path=self.depth_image_geometric_path)
-    
-    @property
-    def depth_image_photometric(self):
-        if self.depth_image_photometric_path == None:
-            return None
-        from colmap_wrapper.colmap import read_array
-        return read_array(path=self.depth_image_photometric_path)
     
         #    @property
         #    def extrinsics(self) -> np.ndarray:
@@ -182,6 +169,53 @@ class ImageInformation(object):
         return Tcw
 
 
+class DepthInformation(object):
+    def __init__(self, path):
+        self.path = path
+        self.width = -1
+        self.height = -1
+        self.channels = -1
+        
+        self.__fid_seek_point = -1
+        
+        self.__read_array_init()
+    
+    def getData(self):
+        from colmap_wrapper.colmap import read_array
+        return read_array(path=self.path)
+    
+    def getDepth(self, uv): # TODO: Maybe add a cache (for some lines)
+        return self.__read_array_pos(uv=uv)
+    
+    def __read_array_init(self):
+        with open(self.path, "rb") as fid:
+            width, height, channels = np.genfromtxt(fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int)
+            
+            self.width = width
+            self.height = height
+            self.channels = channels
+            
+            # Start from beginning and skip Information
+            fid.seek(0)
+            num_delimiter = 0
+            byte = fid.read(1)
+            while True:
+                if byte == b"&":
+                    num_delimiter += 1
+                    if num_delimiter >= 3:
+                        break
+                byte = fid.read(1)
+            
+            self.__fid_seek_point = fid.tell()
+    
+    def __read_array_pos(self, uv, length=1):
+        with open(self.path, "rb") as fid:
+            fid.seek(self.__fid_seek_point + ((uv[1] * self.channels) + (uv[0] * self.width * self.channels)) * np.dtype(np.float32).itemsize)
+            array = np.fromfile(file=fid, dtype=np.float32, count=self.channels*length)
+        
+        array = array.reshape((self.channels*length, 1, self.channels), order="F")
+        return np.transpose(array, (1, 0, 2)).squeeze()
+    
 class Intrinsics:
     def __init__(self, camera):
         self._cx = None
