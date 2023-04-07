@@ -9,13 +9,13 @@ See LICENSE file for more information.
 # Own Modules
 from colmap_wrapper.data.download import Dataset
 from colmap_wrapper.colmap.colmap import COLMAP
-from colmap_wrapper.visualization import ColmapVisualization
+#from colmap_wrapper.visualization import ColmapVisualization
 
 if __name__ == '__main__':
     downloader = Dataset()
     downloader.download_bunny_dataset()
 
-    project = COLMAP(project_path='/home/luigi/Dropbox/07_data/COLMAP_BAPTIST/reco')
+    project = COLMAP(project_path=downloader.file_path)
 
     colmap_project = project.project
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     sparse = colmap_project.get_sparse()
     dense = colmap_project.get_dense()
 
-    project_vs = ColmapVisualization(colmap=colmap_project, image_resize=0.4)
-    project_vs.visualization(frustum_scale=0.8, image_type='image')
+    #project_vs = ColmapVisualization(colmap=colmap_project, image_resize=0.4)
+    #project_vs.visualization(frustum_scale=0.8, image_type='image')
 
     print('Finished')
