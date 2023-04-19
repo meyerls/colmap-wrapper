@@ -12,6 +12,7 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
+from typing import Union
 
 # Libs
 import numpy as np
@@ -25,11 +26,14 @@ class COLMAP(object):
                  dense_pc='fused.ply',
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  exif_read=False,
+                 img_orig: Union[str, Path, None] = None,
                  output_status_function=None):
 
         self.exif_read = exif_read
         self.vis_bg_color = bg_color
         self._project_path: Path = Path(project_path)
+        # Original image path. Colmap does not copy exif data. Therfore we have to access original data
+        self._img_orig_path: Union[Path, None] = Path(img_orig) if img_orig else None
 
         if '~' in str(self._project_path):
             self._project_path = self._project_path.expanduser()
@@ -49,36 +53,42 @@ class COLMAP(object):
                 "dense": self._dense_base_path}})
         else:
             # In case of folder with reconstruction number after sparse (multiple projects) (e.g. 0,1,2)
-            for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
-                project_structure.update({project_index: {"sparse": sparse_project_path}})
+            # WARNING: dense folder 0 an1 are not the same as sparse 0 and 1 (ToDO: find out if this is always the case)
+            #for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
+            #    project_structure.update({project_index: {"sparse": sparse_project_path}})
+
+            for project_index, sparse_project_path in enumerate(list(self._dense_base_path.iterdir())):
+                project_structure.update({project_index: {"sparse": sparse_project_path.joinpath('sparse')}})
 
             for project_index, dense_project_path in enumerate(list(self._dense_base_path.iterdir())):
                 project_structure[project_index].update({"dense": dense_project_path})
 
             for project_index in project_structure.keys():
-                project_structure[project_index].update({"project_path":  self._project_path})
+                project_structure[project_index].update({"project_path": self._project_path})
 
         self.project_list = []
         self.model_ids = []
         
-        n_cores = cpu_count()
-        executor = ThreadPoolExecutor(max_workers=n_cores)
+        #n_cores = 1# cpu_count()
+        #executor = ThreadPoolExecutor(max_workers=n_cores)
         
         for project_index in project_structure.keys():
             self.model_ids.append(project_index)
             
-            def run():
-                project = COLMAPProject(project_path=project_structure[project_index],
-                                        dense_pc=dense_pc,
-                                        bg_color=bg_color,
-                                        exif_read=exif_read,
-                                        output_status_function=output_status_function)
-                
-                self.project_list.append(project)
+     #       def run():
+            project = COLMAPProject(project_path=project_structure[project_index],
+                                    project_index=project_index,
+                                    dense_pc=dense_pc,
+                                    bg_color=bg_color,
+                                    exif_read=exif_read,
+                                    img_orig=self._img_orig_path,
+                                    output_status_function=output_status_function)
+
+            self.project_list.append(project)
             
-            executor.submit(run)
+            #executor.submit(run)
         
-        executor.shutdown(wait=True)
+        #executor.shutdown(wait=True)
 
     @property
     def projects(self):

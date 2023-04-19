@@ -10,6 +10,7 @@ colmap_wrapper/data/bunny_reco
 __pycache__/
 *.py[cod]
 *$py.class
+*.ply
 
 # C extensions
 *.so

@@ -6,15 +6,19 @@ Licensed under the MIT License.
 See LICENSE file for more information.
 """
 
+from copy import deepcopy
+
 import numpy as np
 import open3d as o3d
 import exiftool
+import matplotlib.pyplot as plt
 
 def get_labeled_exif(exif):
     labeled = {}
     for (key, val) in exif.items():
         labeled[TAGS.get(key)] = val
     return labeled
+
 
 def load_image_meta_data(image_path: str) -> np.ndarray:
     """
@@ -81,3 +85,32 @@ def generate_colmap_sparse_pc(points3D: np.ndarray) -> o3d.pybind.geometry.Point
     pc.colors = o3d.utility.Vector3dVector(sparse_pc_color)
 
     return pc
+
+
+def plot_disparity_map(disparity_image):
+    fig, ax = plt.subplots(figsize=(25, 25))
+    min_depth, max_depth = np.percentile(disparity_image, [5, 90])
+    disparity_image[disparity_image < min_depth] = min_depth
+    disparity_image[disparity_image > max_depth] = max_depth
+    disparity_image[disparity_image == 0] = max_depth + 0.1 * max_depth
+    pos = ax.imshow(disparity_image, cmap="Greys")
+    plt.axis('off')
+    cbar = fig.colorbar(pos, ax=ax, shrink=0.52)
+    cbar.ax.tick_params(size=0)
+    cbar.set_ticks([])
+    plt.show()
+
+
+def plot_alpha_blending(rgb_image, disparity_image):
+    rgb_image = deepcopy(rgb_image)
+    disparity_image = deepcopy(disparity_image)
+    fig, ax = plt.subplots(figsize=(15, 15))
+    min_depth, max_depth = np.percentile(disparity_image, [5, 95])
+    disparity_image[disparity_image < min_depth] = min_depth
+    disparity_image[disparity_image > max_depth] = max_depth
+    disparity_image[disparity_image == 0] = max_depth + 0.1 * max_depth
+    pos = ax.imshow(disparity_image, cmap="Greys")
+    plt.axis('off')
+
+    pos = ax.imshow(rgb_image, alpha=0.3)  # interpolation='none'plt.imshow(dst)
+    plt.show()

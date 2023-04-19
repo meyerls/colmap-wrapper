@@ -12,7 +12,7 @@ import collections
 import numpy as np
 from PIL import Image
 
-from colmap_wrapper.colmap import qvec2rotmat
+from colmap_wrapper.colmap import (qvec2rotmat, rotmat2qvec)
 
 CameraModel = collections.namedtuple("CameraModel", ["model_id", "model_name", "num_params"])
 Camera = collections.namedtuple("Camera", ["id", "model", "width", "height", "params"])

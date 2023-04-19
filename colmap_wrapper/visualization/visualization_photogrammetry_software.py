@@ -55,14 +55,14 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         @param image_type:
         @type frustum_scale: object
         """
-        #aa = []
-        #for image_idx in tqdm(self.photogrammetry_software.images.keys()):
+        # aa = []
+        # for image_idx in tqdm(self.photogrammetry_software.images.keys()):
         #    aa.append(self.photogrammetry_software.images[image_idx].extrinsics[:3, 3])
-#
-        #a = o3d.geometry.PointCloud()
-        #a.points = o3d.utility.Vector3dVector(np.vstack(aa))
-        #coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(origin=np.asarray([0., 0., 0.]))
-        #o3d.visualization.draw_geometries([coordinate_frame, a])
+        #
+        # a = o3d.geometry.PointCloud()
+        # a.points = o3d.utility.Vector3dVector(np.vstack(aa))
+        # coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(origin=np.asarray([0., 0., 0.]))
+        # o3d.visualization.draw_geometries([coordinate_frame, a])
 
         geometries = []
         for image_idx in tqdm(self.photogrammetry_software.images.keys()):
@@ -100,11 +100,14 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
 
         self.geometries.extend(geometries)
 
-    def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image', *args):
+    def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image',
+                      title: str = "Open3D Visualizer", window_size: tuple = (1920, 1080 )):
         """
         @param frustum_scale:
         @param point_size:
         @param image_type: ['image, depth_geo', 'depth_photo']
+        @param title:
+        @param window_size:
         """
         image_types = ['image', 'depth_geo', 'depth_photo']
 
@@ -114,7 +117,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         self.add_colmap_dense2geometrie()
         self.add_colmap_sparse2geometrie()
         self.add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
-        self.start_visualizer(point_size=point_size)
+        self.start_visualizer(point_size=point_size, title=title, size=window_size)
 
     def start_visualizer(self,
                          point_size: float,
@@ -126,12 +129,21 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         for geometry in self.geometries:
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
+        ctr = viewer.get_view_control()
+        ctr.set_front([ -0.25053090455707444, -0.86588036871950691, 0.43299590405451305 ])
+        ctr.set_lookat([ 6.298907877205747, 1.3968597508640934, 1.9543917296138904 ])
+        ctr.set_up([0.06321823212762033, -0.460937346978886, -0.88517807094771861 ])
+        ctr.set_zoom(0.02)
         # opt.show_coordinate_frame = True
         opt.point_size = point_size
+        opt.light_on = False
         opt.line_width = 0.01
         opt.background_color = self.vis_bg_color
+
+        viewer.capture_screen_image(filename='./test.png', do_render=True)
         viewer.run()
         viewer.destroy_window()
+
 
 
 if __name__ == '__main__':

@@ -4,13 +4,14 @@
 """
 Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tree/97603b0d352df4e0da87e3ce822a9704ac437933
 """
-
+import os.path
 # Built-in/Generic Imports
 import warnings
 from concurrent.futures import ThreadPoolExecutor, wait
 from multiprocessing import cpu_count
 from enum import Enum
 from pathlib import Path
+from typing import Union
 
 # Libs
 import pycolmap
@@ -19,8 +20,10 @@ import open3d as o3d
 import exiftool
 
 # Own modules
-from colmap_wrapper.colmap import (Camera, Intrinsics, read_images_text, read_points3D_text,
-                                   read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
+
+from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
+                                   read_points3d_binary, read_images_binary, generate_colmap_sparse_pc,
+                                   write_images_binary)
 from colmap_wrapper.colmap.bin import read_cameras_text
 
 
@@ -34,29 +37,31 @@ class LoadElement(Enum):
     EXIF_DATA = 6
     IMAGE_INFO = 8
 
+
 class LoadElementStatus:
     def __init__(self, element: LoadElement, project, finished=False, idx=None, current_id=None, max_id=None):
         self.element = element
         self.project = project
         self.finished = finished
-        
+
         if idx != None:
             self.idx = idx
             self.current_id = -1
             self.max_id = 1
-            
+
         if max_id != None or current_id != None:
             self.current_id = current_id
             self.max_id = max_id
-    
+
     def isStarted(self):
         return not self.finished
-    
+
     def isFinished(self):
         return self.finished
-    
+
     def getElement(self):
         return self.element
+
 
 class PhotogrammetrySoftware(object):
     def __init__(self, project_path):
@@ -77,9 +82,11 @@ class PhotogrammetrySoftware(object):
 
 class COLMAPProject(PhotogrammetrySoftware):
     def __init__(self, project_path: [dict, str],
+                 project_index: int = 0,
                  dense_pc: str = 'fused.ply',
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  exif_read=False,
+                 img_orig: Union[str, Path, None] = None,
                  output_status_function=None):
         """
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
@@ -121,11 +128,14 @@ class COLMAPProject(PhotogrammetrySoftware):
         """
 
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
-        
+
+        self.id = project_index
+
         self.output_status_function = output_status_function
         if output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.PATHS_AND_ATTRIBUTES, project=self, finished=False))
-        
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.PATHS_AND_ATTRIBUTES, project=self, finished=False))
+
         # Flag to read exif data (takes long for large image sets)
         self.exif_read = exif_read
 
@@ -167,7 +177,9 @@ class COLMAPProject(PhotogrammetrySoftware):
         self._depth_image_path: Path = self._stereo_path.joinpath('depth_maps')
         self._normal_image_path: Path = self._stereo_path.joinpath('normal_maps')
 
-        self.__project_ini_path: Path = self._sparse_base_path.joinpath('project.ini')
+        self.__project_ini_path: Path = self._project_path / 'sparse' / str(self.id) / 'project.ini'
+
+        self._img_orig_path: Union[Path, None] = Path(img_orig) if img_orig else None
 
         files: list = []
         types: tuple = ('*.txt', '*.bin')
@@ -186,13 +198,14 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         self.vis_bg_color: np.ndarray = bg_color
         self.project_ini = self.__read_project_init_file()
-        
+
         if output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.PATHS_AND_ATTRIBUTES, project=self, finished=True))
-        
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.PATHS_AND_ATTRIBUTES, project=self, finished=True))
+
         self.read()
-        
-        if output_status_function: # Maybe not reset?
+
+        if output_status_function:  # Maybe not reset?
             self.output_status_function = None
 
     def read(self):
@@ -201,7 +214,7 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         @return:
         """
-        
+
         n_cores = cpu_count()
         executor = ThreadPoolExecutor(max_workers=n_cores)
         
@@ -233,6 +246,8 @@ class COLMAPProject(PhotogrammetrySoftware):
                         PROJECT_CLASS = elements[0].strip('\n')
                         project_ini.update({PROJECT_CLASS: {}})
                         continue
+                    if elements[0] == 'image_path':
+                        project_ini[PROJECT_CLASS].update({'image_path_orig': self._img_orig_path.__str__()})
                     project_ini[PROJECT_CLASS].update({elements[0]: elements[1].strip('\n')})
             return project_ini
         else:
@@ -241,21 +256,24 @@ class COLMAPProject(PhotogrammetrySoftware):
     def __read_exif_data(self):
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.EXIF_DATA, project=self, finished=False))
-        
+
         if self.exif_read:
             if self.__project_ini_path.exists():
                 try:
                     for image_idx in self.images.keys():
-                        self.images[image_idx].original_filename: Path = Path(self.project_ini['Basic']['image_path']) / \
-                                                                         self.images[
-                                                                             image_idx].name
+                        if self._image_path:
+                            self.images[image_idx].original_filename: Path = Path(
+                                self.project_ini['Basic']['image_path_orig']) / self.images[image_idx].name
+                        else:
+                            self.images[image_idx].original_filename: Path = Path(
+                                self.project_ini['Basic']['image_path']) / self.images[image_idx].name
                         with exiftool.ExifToolHelper() as et:
                             metadata = et.get_metadata(self.images[image_idx].original_filename.__str__())
                         self.images[image_idx].exifdata = metadata[0]
                 except exiftool.exceptions.ExifToolExecuteError as error:
                     # traceback.print_exc()
                     warnings.warn("Exif Data could not be read.")
-        
+
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.EXIF_DATA, project=self, finished=True))
 
@@ -263,34 +281,92 @@ class COLMAPProject(PhotogrammetrySoftware):
         """
         @return:
         """
-        
+
+        self.max_depth_scaler = 0
+        self.max_depth_scaler_photometric = 0
+
         current_image = 0
         count_images = len(self.images)
-        
+
         for image_idx in self.images.keys():
             def run(image_idx=image_idx, current_image=current_image, count_images=count_images):
                 if self.output_status_function:
-                    self.output_status_function(LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=False, idx=image_idx, current_id=current_image, max_id=count_images))
-                
-                
+                    self.output_status_function(
+                        LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=False, idx=image_idx,
+                                          current_id=current_image, max_id=count_images))
+
                 self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
-                
-                self.images[image_idx].depth_image_geometric_path = next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None)
-                self.images[image_idx].depth_image_photometric_path = next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None)
-                
+
+                self.images[image_idx].depth_image_geometric_path = next(
+                    (p for p in self.depth_path_geometric if self.images[image_idx].name in p), None)
+                self.images[image_idx].depth_image_photometric_path = next(
+                    (p for p in self.depth_path_photometric if self.images[image_idx].name in p), None)
+
                 self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
-                
-                
+
+                self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
+
+                if self.load_depth:
+                    if self.output_status_function:
+                        self.output_status_function(
+                            LoadElementStatus(element=LoadElement.DEPTH_IMAGE, project=self, finished=False,
+                                              idx=image_idx, current_id=current_image, max_id=count_images))
+
+                    self.images[image_idx].depth_image_geometric = read_array(
+                        path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
+
+                    # print(self.images[image_idx].name)
+                    # print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
+                    # print('\n')
+
+                    min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
+
+                    if max_depth > self.max_depth_scaler:
+                        self.max_depth_scaler = max_depth
+
+                    self.images[image_idx].depth_image_photometric = read_array(
+                        path=next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
+
+                    min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_photometric, [5, 95])
+
+                    if max_depth > self.max_depth_scaler_photometric:
+                        self.max_depth_scaler_photometric = max_depth
+
+                    if self.output_status_function:
+                        self.output_status_function(
+                            LoadElementStatus(element=LoadElement.DEPTH_IMAGE, project=self, finished=True,
+                                              idx=image_idx, current_id=current_image, max_id=count_images))
+
+                else:
+                    self.images[image_idx].depth_image_geometric = None
+                    self.images[image_idx].depth_path_photometric = None
+                # self.images[image_idx].normal_image = self.__read_depth_images
+
                 if self.output_status_function:
-                    self.output_status_function(LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=True, idx=image_idx, current_id=current_image, max_id=count_images))
-            
-            
+                    self.output_status_function(
+                        LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=False, idx=image_idx,
+                                          current_id=current_image, max_id=count_images))
+
+                self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
+
+                # Fixing Strange Error when cy is negative
+                if self.images[image_idx].intrinsics.cx < 0:
+                    pass
+
+                if self.images[image_idx].intrinsics.cy < 0:
+                    pass
+
+                if self.output_status_function:
+                    self.output_status_function(
+                        LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=True, idx=image_idx,
+                                          current_id=current_image, max_id=count_images))
+
             current_image += 1
             if executor != None:
                 executor.submit(run)
             else:
                 run()
-            
+
     def __read_cameras(self):
         """
         Load camera model from file. Currently only Simple Radial and 'Pinhole' are supported. If the camera settings
@@ -298,10 +374,10 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         @return:
         """
-        
+
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.CAMERAS, project=self, finished=False))
-        
+
         if list(self._sparse_base_path.glob('*.txt')).__len__() > 0:
             cameras = read_cameras_text(self._sparse_base_path / 'cameras.txt')
 
@@ -362,8 +438,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                                        params=params)
 
                 self.cameras.update({camera_id: camera_params})
-        
-        
+
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.CAMERAS, project=self, finished=True))
 
@@ -374,19 +449,17 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         @return:
         """
-        
+
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.IMAGES, project=self, finished=False))
-        
-        
+
         if self._image_path.suffix == '.txt':
             self.images = read_images_text(self._image_path)
         elif self._image_path.suffix == '.bin':
             self.images = read_images_binary(self._image_path)
         else:
             raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
-        
-        
+
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.IMAGES, project=self, finished=True))
 
@@ -399,17 +472,19 @@ class COLMAPProject(PhotogrammetrySoftware):
         @return:
         """
         if self.output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.SPARSE_MODEL, project=self, finished=False))
-        
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.SPARSE_MODEL, project=self, finished=False))
+
         if self._points3D_path.suffix == '.txt':
             self.sparse = read_points3D_text(self._points3D_path)
         elif self._points3D_path.suffix == '.bin':
             self.sparse = read_points3d_binary(self._points3D_path)
         else:
             raise FileNotFoundError('Wrong extension found, {}'.format(self._camera_path.suffix))
-        
+
         if self.output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.SPARSE_MODEL, project=self, finished=True))
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.SPARSE_MODEL, project=self, finished=True))
 
     def __read_depth_structure(self):
         """
@@ -418,8 +493,9 @@ class COLMAPProject(PhotogrammetrySoftware):
         @return:
         """
         if self.output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.DEPTH_STRUCTURE, project=self, finished=False))
-        
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.DEPTH_STRUCTURE, project=self, finished=False))
+
         self.depth_path_geometric = []
         self.depth_path_photometric = []
 
@@ -430,9 +506,10 @@ class COLMAPProject(PhotogrammetrySoftware):
                 self.depth_path_photometric.append(depth_path.__str__())
             else:
                 raise ValueError('Unkown depth image type: {}'.format(path))
-        
+
         if self.output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.DEPTH_STRUCTURE, project=self, finished=True))
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.DEPTH_STRUCTURE, project=self, finished=True))
 
     def __read_dense_model(self):
         """
@@ -441,12 +518,40 @@ class COLMAPProject(PhotogrammetrySoftware):
         @return:
         """
         if self.output_status_function:
-            self.output_status_function(LoadElementStatus(element=LoadElement.DENSE_MODEL, project=self, finished=False))
-        
+            self.output_status_function(
+                LoadElementStatus(element=LoadElement.DENSE_MODEL, project=self, finished=False))
+
         self.dense = o3d.io.read_point_cloud(self._fused_path.__str__())
-        
+
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.DENSE_MODEL, project=self, finished=True))
+
+    def transform_poses(self, T):
+        from colmap_wrapper.colmap import (rotmat2qvec)
+        for image_idx in self.images.keys():
+            self.images[image_idx].extrinsics = T @ self.images[image_idx].extrinsics
+            self.images[image_idx].qvec = rotmat2qvec(self.images[image_idx].extrinsics[:3, :3].flatten())
+            self.images[image_idx].tvec = -np.dot(-self.images[image_idx].extrinsics[:3, 3],
+                                                  -self.images[image_idx].qvec2rotmat().T)
+            self.images[image_idx].set_extrinsics()
+
+    def transform_dense(self, T):
+        self.dense.transform(T)
+
+    def transform_sparse(self, T):
+        return NotImplementedError
+
+    def transform(self, T):
+        self.transform_poses(T)
+        self.transform_dense(T)
+        # self.transform_sparse(T)
+
+    def save(self):
+        path_pc = os.path.join(self._dense_base_path, 'fused_oriented.ply')
+        o3d.io.write_point_cloud(path_pc, self.dense)
+
+        path_image = os.path.join(self._sparse_base_path, 'images_oriented.bin')
+        write_images_binary(self.images, path_image)
 
 
 if __name__ == '__main__':
@@ -463,5 +568,5 @@ if __name__ == '__main__':
     sparse = project.get_sparse()
     dense = project.get_dense()
 
-    project_vs = ColmapVisualization(colmap=project,image_resize=0.4)
+    project_vs = ColmapVisualization(colmap=project, image_resize=0.4)
     project_vs.visualization(frustum_scale=0.8, image_type='image')

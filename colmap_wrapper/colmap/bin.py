@@ -7,6 +7,8 @@ See LICENSE file for more information.
 
 
 Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tree/97603b0d352df4e0da87e3ce822a9704ac437933
+and
+https://github.com/colmap/colmap/blob/dev/scripts/python/
 """
 
 # Built-in/Generic Imports
@@ -31,6 +33,21 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     data = fid.read(num_bytes)
     # Struct unpack return tuple (https://docs.python.org/3/library/struct.html)
     return struct.unpack(endian_character + format_char_sequence, data)
+
+def write_next_bytes(fid, data, format_char_sequence, endian_character="<"):
+    """pack and write to a binary file.
+    :param fid:
+    :param data: data to send, if multiple elements are sent at the same time,
+    they should be encapsuled either in a list or a tuple
+    :param format_char_sequence: List of {c, e, f, d, h, H, i, I, l, L, q, Q}.
+    should be the same length as the data list or tuple
+    :param endian_character: Any of {@, =, <, >, !}
+    """
+    if isinstance(data, (list, tuple)):
+        bytes = struct.pack(endian_character + format_char_sequence, *data)
+    else:
+        bytes = struct.pack(endian_character + format_char_sequence, data)
+    fid.write(bytes)
 
 
 def read_cameras_binary(path_to_model_file):
@@ -347,6 +364,25 @@ def write_images_text(images, path):
                 points_strings.append(" ".join(map(str, [*xy, point3D_id])))
             fid.write(" ".join(points_strings) + "\n")
 
+def write_images_binary(images, path_to_model_file):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadImagesBinary(const std::string& path)
+        void Reconstruction::WriteImagesBinary(const std::string& path)
+    """
+    with open(path_to_model_file, "wb") as fid:
+        write_next_bytes(fid, len(images), "Q")
+        for _, img in images.items():
+            write_next_bytes(fid, img.id, "i")
+            write_next_bytes(fid, img.qvec.tolist(), "dddd")
+            write_next_bytes(fid, img.tvec.tolist(), "ddd")
+            write_next_bytes(fid, img.camera_id, "i")
+            for char in img.name:
+                write_next_bytes(fid, char.encode("utf-8"), "c")
+            write_next_bytes(fid, b"\x00", "c")
+            write_next_bytes(fid, len(img.point3D_ids), "Q")
+            for xy, p3d_id in zip(img.xys, img.point3D_ids):
+                write_next_bytes(fid, [*xy, p3d_id], "ddq")
 
 def write_points3D_text(points3D, path):
     """
