@@ -6,24 +6,24 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 """
 
 # Built-in/Generic Imports
-import warnings
 from concurrent.futures import ThreadPoolExecutor, wait
-from multiprocessing import cpu_count
 from enum import Enum
+from multiprocessing import cpu_count
 from pathlib import Path
+import warnings
 
-# Libs
+from colmap_wrapper.colmap import (Camera, Intrinsics, read_images_text, read_points3D_text,
+                                   read_points3d_binary, read_images_binary, generate_colmap_sparse_pc, DepthInformation)
+from colmap_wrapper.colmap.bin import read_cameras_text
+import exiftool
 import pycolmap
+
 import numpy as np
 import open3d as o3d
-import exiftool
 
+
+# Libs
 # Own modules
-from colmap_wrapper.colmap import (Camera, Intrinsics, read_images_text, read_points3D_text,
-                                   read_points3d_binary, read_images_binary, generate_colmap_sparse_pc)
-from colmap_wrapper.colmap.bin import read_cameras_text
-
-
 class LoadElement(Enum):
     PATHS_AND_ATTRIBUTES = 0
     CAMERAS = 1
@@ -275,8 +275,8 @@ class COLMAPProject(PhotogrammetrySoftware):
                 
                 self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
                 
-                self.images[image_idx].depth_image_geometric_path = next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None)
-                self.images[image_idx].depth_image_photometric_path = next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None)
+                self.images[image_idx].depth_image_geometric = DepthInformation(path = next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
+                self.images[image_idx].depth_image_photometric = DepthInformation(next((p for p in self.depth_path_photometric if self.images[image_idx].name in p), None))
                 
                 self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
                 

@@ -302,7 +302,6 @@ def read_array(path):
     array = array.reshape((width, height, channels), order="F")
     return np.transpose(array, (1, 0, 2)).squeeze()
 
-
 def write_cameras_text(cameras, path):
     """
     see: src/base/reconstruction.cc
