@@ -19,7 +19,7 @@ class PhotogrammetrySoftwareVisualization():
     def __init__(self, photogrammetry_software: PhotogrammetrySoftware, image_resize: float = 0.3):
         self.photogrammetry_software = photogrammetry_software
         self.geometries = []
-        
+
         self.image_resize: float = image_resize
 
     def show_sparse(self):
@@ -76,7 +76,8 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-                image = (image / self.photogrammetry_software.max_depth_scaler * 255).astype(np.uint8) # TODO max_depth_scaler
+                image = (image / self.photogrammetry_software.max_depth_scaler * 255).astype(
+                    np.uint8)  # TODO max_depth_scaler
                 image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
             elif image_type == 'depth_photo':
                 import cv2
@@ -86,7 +87,8 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
                 image[image < min_depth] = min_depth
                 image[image > max_depth] = max_depth
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-                image = (image / self.photogrammetry_software.max_depth_scaler_photometric * 255).astype(np.uint8) # TODO max_depth_scaler_photometric
+                image = (image / self.photogrammetry_software.max_depth_scaler_photometric * 255).astype(
+                    np.uint8)  # TODO max_depth_scaler_photometric
 
             line_set, sphere, mesh = draw_camera_viewport(
                 extrinsics=self.photogrammetry_software.images[image_idx].extrinsics,
@@ -101,7 +103,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         self.geometries.extend(geometries)
 
     def visualization(self, frustum_scale: float = 1., point_size: float = 1., image_type: str = 'image',
-                      title: str = "Open3D Visualizer", window_size: tuple = (1920, 1080 )):
+                      title: str = "Open3D Visualizer", window_size: tuple = (1920, 1080)):
         """
         @param frustum_scale:
         @param point_size:
@@ -130,9 +132,9 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
             viewer.add_geometry(geometry)
         opt = viewer.get_render_option()
         ctr = viewer.get_view_control()
-        ctr.set_front([ -0.25053090455707444, -0.86588036871950691, 0.43299590405451305 ])
-        ctr.set_lookat([ 6.298907877205747, 1.3968597508640934, 1.9543917296138904 ])
-        ctr.set_up([0.06321823212762033, -0.460937346978886, -0.88517807094771861 ])
+        ctr.set_front([-0.25053090455707444, -0.86588036871950691, 0.43299590405451305])
+        ctr.set_lookat([6.298907877205747, 1.3968597508640934, 1.9543917296138904])
+        ctr.set_up([0.06321823212762033, -0.460937346978886, -0.88517807094771861])
         ctr.set_zoom(0.02)
         # opt.show_coordinate_frame = True
         opt.point_size = point_size
@@ -143,7 +145,6 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         viewer.capture_screen_image(filename='./test.png', do_render=True)
         viewer.run()
         viewer.destroy_window()
-
 
 
 if __name__ == '__main__':

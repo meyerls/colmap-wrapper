@@ -144,6 +144,10 @@ if __name__ == '__main__':
     sparse = colmap_project.get_sparse()
     dense = colmap_project.get_dense()
 
+    for COLMAP_MODEL in project.projects:
+        project_vs = ColmapVisualization(colmap=COLMAP_MODEL, bg_color=np.asarray([0, 0, 0]))
+        project_vs.visualization(frustum_scale=0.4, image_type='image', point_size=0.001)
+
     gps, extrinsic = visualize_gps_osm(project=project,
                                        map_path='../gps/map.png',
                                        osm_boarders=(49.66721, 11.32313, 49.66412, 11.32784),
