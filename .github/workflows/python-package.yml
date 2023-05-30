@@ -31,4 +31,4 @@ jobs:
       - name: 'Test COLMAP wrapper'
         run: |
           exiftool -ver
-          python colmap_wrapper/test.py
+          python colmap_wrapper/test/test.py

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     sparse = colmap_project.get_sparse()
     dense = colmap_project.get_dense()
 
-    project_vs = ColmapVisualization(colmap=colmap_project, bg_color=np.asarray([0, 0, 0]))
-    project_vs.visualization(frustum_scale=0.4, image_type='image', point_size=0.001)
+    #project_vs = ColmapVisualization(colmap=colmap_project, bg_color=np.asarray([0, 0, 0]))
+    #project_vs.visualization(frustum_scale=0.4, image_type='image', point_size=0.001)
 
     print('Finished')
