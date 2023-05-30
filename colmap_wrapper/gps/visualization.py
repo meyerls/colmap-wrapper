@@ -3,6 +3,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 
+# Built-in/Generic Imports
+from typing import Tuple
+
+# Built-in/Generic Imports
+# ...
+
+# Libs
+import numpy as np
+import open3d as o3d
+from PIL import Image, ImageFont, ImageDraw
+from pyquaternion import Quaternion
+
+
+# Own modules
+# ...
+
 
 class GPSVisualization(object):
     """

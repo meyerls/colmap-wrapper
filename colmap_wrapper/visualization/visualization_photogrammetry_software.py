@@ -13,14 +13,14 @@ from tqdm import tqdm
 from typing import Union
 
 # Libs
-from colmap_wrapper.colmap import COLMAP, COLMAPProject
-from colmap_wrapper.colmap.colmap_project import PhotogrammetrySoftware
+from colmap_wrapper.dataloader import COLMAPLoader, COLMAPProject
+from colmap_wrapper.dataloader.project import PhotogrammetrySoftware
 from colmap_wrapper.visualization import draw_camera_viewport
-from  colmap_wrapper import USER_NAME
+
 
 class PhotogrammetrySoftwareVisualization(object):
     def __init__(self, photogrammetry_software: PhotogrammetrySoftware, image_resize: float = 0.3):
-        if type(photogrammetry_software) == COLMAP:
+        if type(photogrammetry_software) == COLMAPLoader:
             self.photogrammetry_software = photogrammetry_software.project_list
         elif type(photogrammetry_software) == COLMAPProject:
             self.photogrammetry_software = [photogrammetry_software]
@@ -38,7 +38,7 @@ class PhotogrammetrySoftwareVisualization(object):
 
 
 class ColmapVisualization(PhotogrammetrySoftwareVisualization):
-    def __init__(self, colmap: Union[COLMAP, COLMAPProject], bg_color: np.ndarray = np.asarray([1, 1, 1]),
+    def __init__(self, colmap: Union[COLMAPLoader, COLMAPProject], bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  image_resize: float = 0.3):
         super().__init__(colmap, image_resize=image_resize)
 
@@ -172,8 +172,10 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
 
 
 if __name__ == '__main__':
-    project = COLMAP(project_path='/home/{}/Dropbox/07_data/misc/bunny_data/reco_DocSem2'.format(USER_NAME),
-                     dense_pc='fused.ply')
+    from colmap_wrapper import USER_NAME
+
+    project = COLMAPLoader(project_path='/home/{}/Dropbox/07_data/misc/bunny_data/reco_DocSem2'.format(USER_NAME),
+                           dense_pc='fused.ply')
 
     project_vs = ColmapVisualization(colmap=project.project_list[0], image_resize=0.4)
     project_vs.visualization(frustum_scale=0.8, image_type='image')

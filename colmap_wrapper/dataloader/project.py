@@ -21,10 +21,10 @@ import exiftool
 
 # Own modules
 
-from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
-                                   read_points3d_binary, read_images_binary, generate_colmap_sparse_pc,
-                                   write_images_binary, write_points3D_binary)
-from colmap_wrapper.colmap.bin import read_cameras_text
+from colmap_wrapper.dataloader import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
+                                       read_points3d_binary, read_images_binary, generate_colmap_sparse_pc,
+                                       write_images_binary, write_points3D_binary)
+from colmap_wrapper.dataloader.bin import read_cameras_text
 
 
 class LoadElement(Enum):
@@ -120,10 +120,10 @@ class COLMAPProject(PhotogrammetrySoftware):
             +── fused.ply
             +── meshed-poisson.ply
             +── meshed-delaunay.ply
-            +── run-colmap-geometric.sh
-            +── run-colmap-photometric.sh
+            +── run-dataloader-geometric.sh
+            +── run-dataloader-photometric.sh
 
-        @param project_path: path to colmap project
+        @param project_path: path to dataloader project
         @param dense_pc: path to dense point cloud (Might be useful if pc has been renamed or deviades from fused.ply)
         @param bg_color: background color for visualization
         """

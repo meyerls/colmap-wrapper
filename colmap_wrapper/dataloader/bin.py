@@ -19,7 +19,7 @@ import pathlib as path
 import numpy as np
 
 # Own
-from colmap_wrapper.colmap.camera import (CAMERA_MODEL_IDS, Camera, ImageInformation, Point3D)
+from colmap_wrapper.dataloader.camera import (CAMERA_MODEL_IDS, Camera, ImageInformation, Point3D)
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
@@ -254,7 +254,7 @@ def read_points3D_text(path):
 
 def read_reconstruction_data(base_path):
     '''
-        Path to colmap folder. It must contain folder 'sparse' with files 'cameras.bin', 'images.bin', 'points3D.bin'.
+        Path to dataloader folder. It must contain folder 'sparse' with files 'cameras.bin', 'images.bin', 'points3D.bin'.
 
     Returns cameras, images, points3D
 

@@ -6,5 +6,6 @@ Licensed under the MIT License.
 See LICENSE file for more information.
 """
 
-from colmap_wrapper.gps.registration import GPSRegistration
-from colmap_wrapper.gps.visualization import GPSVisualization
+from colmap_wrapper.gps.registration import *
+from colmap_wrapper.gps.utils import *
+from colmap_wrapper.gps.visualization import *

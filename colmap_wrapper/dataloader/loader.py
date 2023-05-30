@@ -10,17 +10,17 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Built-in/Generic Imports
 from pathlib import Path
-
 from typing import Union
+
 # Libs
 import numpy as np
 
 # Own modules
-from colmap_wrapper.colmap.colmap_project import COLMAPProject
+from colmap_wrapper.dataloader.project import COLMAPProject
 from colmap_wrapper.gps.registration import GPSRegistration
-from colmap_wrapper import USER_NAME
 
-class COLMAP(GPSRegistration):
+
+class COLMAPLoader(GPSRegistration):
     def __init__(self, project_path: str,
                  dense_pc='fused.ply',
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
@@ -115,6 +115,7 @@ class COLMAP(GPSRegistration):
 
 if __name__ == '__main__':
     from colmap_wrapper.visualization import ColmapVisualization
+    from colmap_wrapper import USER_NAME
 
     MODE = 'multi'
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
         downloader = Dataset()
         downloader.download_bunny_dataset()
 
-        project = COLMAP(project_path=downloader.file_path)
+        project = COLMAPLoader(project_path=downloader.file_path)
 
         colmap_project = project.project
 
@@ -136,8 +137,8 @@ if __name__ == '__main__':
         project_vs = ColmapVisualization(colmap=colmap_project, image_resize=0.4)
         project_vs.visualization(frustum_scale=0.8, image_type='image')
     elif MODE == "multi":
-        project = COLMAP(project_path='/home/{}/Dropbox/07_data/For5G/22_11_14/reco'.format(USER_NAME),
-                         dense_pc='fused.ply')
+        project = COLMAPLoader(project_path='/home/{}/Dropbox/07_data/For5G/22_11_14/reco'.format(USER_NAME),
+                               dense_pc='fused.ply')
 
         for model_idx, COLMAP_MODEL in enumerate(project.projects):
             camera = COLMAP_MODEL.cameras

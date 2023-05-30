@@ -1,9 +1,8 @@
 # COLMAP Wrapper
 
-<img alt="PyPI" src="https://img.shields.io/pypi/v/colmap-wrapper?label=PyPI">
-<a href="https://img.shields.io/pypi/pyversions/colmap-wrapper"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/colmap-wrapper"></a>
+<img alt="PyPI" src="https://img.shields.io/pypi/v/colmap-wrapper?label=PyPI"> <a href="https://img.shields.io/pypi/pyversions/colmap-wrapper"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/colmap-wrapper"></a> <a href="https://github.com/meyerls/colmap_wrapper/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/meyerls/colmap-wrapper"></a>
+
 <!--a href="https://github.com/meyerls/colmap-wrapper/actions"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/meyerls/colmap-wrapper/Python%20package"></a-->
-<a href="https://github.com/meyerls/colmap_wrapper/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/meyerls/colmap-wrapper"></a>
 
 ## About
 
@@ -24,7 +23,7 @@ This repository is tested on Python 3.8+ and can currently only be installed
 from [PyPi](https://pypi.org/project/colmap-wrapper/).
 
  ````bash
-pip install colmap-wrapper
+pip install dataloader-wrapper
  ````
 
 ## Usage
@@ -32,17 +31,17 @@ pip install colmap-wrapper
 ### Single Reconstruction
 
 To visualize a single reconstruction from COLMAP, the following code reads all colmap elements and visualizes them. For
-this case an example reconstruction project is provided as shown at the top of the readme. 
+this case an example reconstruction project is provided as shown at the top of the readme.
 
 ```python
-from colmap_wrapper.colmap import COLMAP
+from colmap_wrapper.dataloader import COLMAPLoader
 from colmap_wrapper.visualization import ColmapVisualization
 from colmap_wrapper.data.download import Dataset
 
 downloader = Dataset()
 downloader.download_bunny_dataset()
 
-project = COLMAP(project_path=downloader.file_path, image_resize=0.3)
+project = COLMAPLoader(project_path=downloader.file_path)
 
 colmap_project = project.project
 
@@ -54,7 +53,7 @@ dense = colmap_project.get_dense()
 
 # Visualize COLMAP Reconstruction
 project_vs = ColmapVisualization(colmap_project)
-project_vs.visualization(frustum_scale=0.7, image_type='image')
+project_vs.visualization(frustum_scale=0.7, image_type='image', image_resize=0.4)
 ```
 
 ### Multiple Incomplete Reconstruction
@@ -63,12 +62,12 @@ In case of an incomplete reconstruction colmap creates partial reconstructions. 
 reconstructions can be called as shown below.
 
 ```python
-from colmap_wrapper.colmap import COLMAP
+from colmap_wrapper.dataloader import COLMAPLoader
 from colmap_wrapper.visualization import ColmapVisualization
 
-project = COLMAP(project_path="[PATH2COLMAP_PROJECT]", image_resize=0.3)
+project = COLMAPLoader(project_path="[PATH2COLMAP_PROJECT]", image_resize=0.3)
 
-# project.projects is a list containing single colmap projects
+# project.projects is a list containing single dataloader projects
 for COLMAP_MODEL in project.projects:
     project_vs = ColmapVisualization(colmap=COLMAP_MODEL)
     project_vs.visualization(frustum_scale=0.7, image_type='image')
@@ -77,7 +76,8 @@ for COLMAP_MODEL in project.projects:
 ## References
 
 * [PyExifTool](https://github.com/sylikc/pyexiftool): A library to communicate with the [ExifTool](https://exiftool.org)
-  command- application. If you have trouble installing it please refer to the PyExifTool-Homepage. 
+  command- application. If you have trouble installing it please refer to the PyExifTool-Homepage.
+
 ```bash
 # For Ubuntu users:
 wget https://exiftool.org/Image-ExifTool-12.51.tar.gz

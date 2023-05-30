@@ -5,7 +5,7 @@ import random
 # Own Modules
 from colmap_wrapper.gps.utils import *
 from colmap_wrapper.gps.visualization import GPSVisualization
-from colmap_wrapper import USER_NAME
+
 
 class GPSRegistration(object):
     def __init__(self):
@@ -233,8 +233,9 @@ class GPSRegistration(object):
 
 
 if __name__ == '__main__':
-    from colmap_wrapper.colmap.colmap import COLMAP
+    from colmap_wrapper.dataloader.loader import COLMAPLoader
     from colmap_wrapper.visualization import ColmapVisualization
+    from colmap_wrapper import USER_NAME
 
     if True:
         path = "/home/{}/Documents/reco/23_04_24/01".format(USER_NAME)
@@ -242,13 +243,13 @@ if __name__ == '__main__':
     else:
         path = '/media/{}/Samsung_T5/For5G/reco/23_03_17/03'.format(USER_NAME)
         img_orig = '/media/{}/Samsung_T5/For5G/data/23_03_17/03'.format(USER_NAME)
-    project = COLMAP(project_path=path,
-                     exif_read=True,
-                     img_orig=img_orig,
-                     dense_pc='cropped.ply')
+    project = COLMAPLoader(project_path=path,
+                           exif_read=True,
+                           img_orig=img_orig,
+                           dense_pc='cropped.ply')
 
-    #project_vs = ColmapVisualization(colmap=project, bg_color=np.asarray([0, 0, 0]))
-    #project_vs.visualization(show_sparse=False, frustum_scale=0.4, image_type='image', point_size=0.001)
+    # project_vs = ColmapVisualization(dataloader=project, bg_color=np.asarray([0, 0, 0]))
+    # project_vs.visualization(show_sparse=False, frustum_scale=0.4, image_type='image', point_size=0.001)
 
     project.gps_visualize(map_path='map.png',
                           osm_boarders=(49.66721, 11.32313, 49.66412, 11.32784),
@@ -256,8 +257,8 @@ if __name__ == '__main__':
 
     project.align()  # project.coarse_align() + project.fine_align()
 
-    #project.fuse_projects()
-    #project.save_project()
+    # project.fuse_projects()
+    # project.save_project()
 
     project_vs = ColmapVisualization(colmap=project, bg_color=np.asarray([0, 0, 0]))
     project_vs.visualization(show_sparse=False, frustum_scale=0.4, image_type='image', point_size=0.001)

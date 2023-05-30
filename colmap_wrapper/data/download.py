@@ -59,7 +59,7 @@ def extract(filename: str, output_dir: str):
 class Dataset:
     def __init__(self):
         self.dataset_name = None
-        self.dataset_path = None
+        self.file_path = None
         self.filename = None
         self.url = None
         self.data_path = None
@@ -101,4 +101,4 @@ if __name__ == '__main__':
     downloader = Dataset()
     downloader.download_bunny_dataset()
 
-    print('Saved at {}'.format(downloader.dataset_path))
+    print('Saved at {}'.format(downloader.file_path))
