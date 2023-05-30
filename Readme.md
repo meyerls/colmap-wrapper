@@ -1,7 +1,8 @@
 # COLMAP Wrapper
 
+<img alt="PyPI" src="https://img.shields.io/pypi/v/colmap-wrapper?label=PyPI">
 <a href="https://img.shields.io/pypi/pyversions/colmap-wrapper"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/colmap-wrapper"></a>
-<a href="https://github.com/meyerls/colmap-wrapper/actions"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/meyerls/colmap-wrapper/Python%20package"></a>
+<!--a href="https://github.com/meyerls/colmap-wrapper/actions"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/meyerls/colmap-wrapper/Python%20package"></a-->
 <a href="https://github.com/meyerls/colmap_wrapper/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/meyerls/colmap-wrapper"></a>
 
 ## About

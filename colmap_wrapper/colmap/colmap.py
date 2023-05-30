@@ -10,24 +10,25 @@ Code for COLMAP readout borrowed from https://github.com/uzh-rpg/colmap_utils/tr
 
 # Built-in/Generic Imports
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import cpu_count
-from typing import Union
 
+from typing import Union
 # Libs
 import numpy as np
 
 # Own modules
 from colmap_wrapper.colmap.colmap_project import COLMAPProject
+from colmap_wrapper.gps.registration import GPSRegistration
+from colmap_wrapper import USER_NAME
 
-
-class COLMAP(object):
+class COLMAP(GPSRegistration):
     def __init__(self, project_path: str,
                  dense_pc='fused.ply',
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  exif_read=False,
                  img_orig: Union[str, Path, None] = None,
-                 output_status_function=None):
+                 output_status_function=None,
+                 oriented: bool = False):
+        GPSRegistration.__init__(self)
 
         self.exif_read = exif_read
         self.vis_bg_color = bg_color
@@ -54,7 +55,7 @@ class COLMAP(object):
         else:
             # In case of folder with reconstruction number after sparse (multiple projects) (e.g. 0,1,2)
             # WARNING: dense folder 0 an1 are not the same as sparse 0 and 1 (ToDO: find out if this is always the case)
-            #for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
+            # for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
             #    project_structure.update({project_index: {"sparse": sparse_project_path}})
 
             for project_index, sparse_project_path in enumerate(list(self._dense_base_path.iterdir())):
@@ -68,27 +69,28 @@ class COLMAP(object):
 
         self.project_list = []
         self.model_ids = []
-        
-        #n_cores = 1# cpu_count()
-        #executor = ThreadPoolExecutor(max_workers=n_cores)
-        
+
+        # n_cores = 1# cpu_count()
+        # executor = ThreadPoolExecutor(max_workers=n_cores)
+
         for project_index in project_structure.keys():
             self.model_ids.append(project_index)
-            
-     #       def run():
+
+            #       def run():
             project = COLMAPProject(project_path=project_structure[project_index],
                                     project_index=project_index,
                                     dense_pc=dense_pc,
                                     bg_color=bg_color,
                                     exif_read=exif_read,
                                     img_orig=self._img_orig_path,
-                                    output_status_function=output_status_function)
+                                    output_status_function=output_status_function,
+                                    oriented=oriented)
 
             self.project_list.append(project)
-            
-            #executor.submit(run)
-        
-        #executor.shutdown(wait=True)
+
+            # executor.submit(run)
+
+        # executor.shutdown(wait=True)
 
     @property
     def projects(self):
@@ -103,6 +105,12 @@ class COLMAP(object):
     @projects.setter
     def projects(self, projects):
         self.project_list = projects
+
+    def fuse_projects(self):
+        return NotImplementedError
+
+    def save_project(self, output_path):
+        return NotImplementedError
 
 
 if __name__ == '__main__':
@@ -128,7 +136,7 @@ if __name__ == '__main__':
         project_vs = ColmapVisualization(colmap=colmap_project, image_resize=0.4)
         project_vs.visualization(frustum_scale=0.8, image_type='image')
     elif MODE == "multi":
-        project = COLMAP(project_path='/home/luigi/Dropbox/07_data/For5G/22_11_14/reco',
+        project = COLMAP(project_path='/home/{}/Dropbox/07_data/For5G/22_11_14/reco'.format(USER_NAME),
                          dense_pc='fused.ply')
 
         for model_idx, COLMAP_MODEL in enumerate(project.projects):

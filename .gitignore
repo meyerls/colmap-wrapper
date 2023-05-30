@@ -1,3 +1,5 @@
+./colmap_wrapper/test/testGPS.py
+
 .idea/
 data/
 #test.py

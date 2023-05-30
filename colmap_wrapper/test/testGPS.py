@@ -12,9 +12,10 @@ import pylab as plt
 import open3d as o3d
 
 # Own Modules
-from colmap_wrapper.gps.gps import GPSVis
+from colmap_wrapper.gps.visualization import GPSVisualization
 from colmap_wrapper.colmap.colmap import COLMAP
 from colmap_wrapper.visualization import ColmapVisualization
+from colmap_wrapper import USER_NAME
 
 
 def points2pcd(points: np.ndarray):
@@ -117,7 +118,8 @@ def visualize_gps_osm(project, map_path, osm_boarders, save_as: str, show: bool 
     for key in gps_data.keys():
         gps_data_osm.extend(gps_data[key])
 
-    vis = GPSVis(gps_data_osm, map_path=map_path, points=osm_boarders)  # Draw converted records to the map image.
+    vis = GPSVisualization(gps_data_osm, map_path=map_path,
+                           points=osm_boarders)  # Draw converted records to the map image.
 
     vis.create_image(color=(0, 0, 255), width=0.2)
     vis.plot_map(show=True, save_as=save_as)
@@ -127,11 +129,11 @@ def visualize_gps_osm(project, map_path, osm_boarders, save_as: str, show: bool 
 
 if __name__ == '__main__':
     if False:
-        path = "/home/luigi/Documents/reco/23_04_14/01"
+        path = "/home/{}/Documents/reco/23_04_14/01".format(USER_NAME)
         img_orig = None
     else:
-        path = '/media/se86kimy/Samsung_T5/For5G/reco/23_03_17/03'
-        img_orig = '/media/se86kimy/Samsung_T5/For5G/data/23_03_17/03'
+        path = '/media/{}/Samsung_T5/For5G/reco/23_03_17/03'.format(USER_NAME)
+        img_orig = '/media/{}/Samsung_T5/For5G/data/23_03_17/03'.format(USER_NAME)
     project = COLMAP(project_path=path,
                      exif_read=True,
                      img_orig=img_orig,

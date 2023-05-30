@@ -407,3 +407,21 @@ def write_points3D_text(points3D, path):
             for image_id, point2D in zip(pt.image_ids, pt.point2D_idxs):
                 track_strings.append(" ".join(map(str, [image_id, point2D])))
             fid.write(" ".join(track_strings) + "\n")
+
+def write_points3D_binary(points3D, path_to_model_file):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadPoints3DBinary(const std::string& path)
+        void Reconstruction::WritePoints3DBinary(const std::string& path)
+    """
+    with open(path_to_model_file, "wb") as fid:
+        write_next_bytes(fid, len(points3D), "Q")
+        for _, pt in points3D.items():
+            write_next_bytes(fid, pt.id, "Q")
+            write_next_bytes(fid, pt.xyz.tolist(), "ddd")
+            write_next_bytes(fid, pt.rgb.tolist(), "BBB")
+            write_next_bytes(fid, pt.error, "d")
+            track_length = pt.image_ids.shape[0]
+            write_next_bytes(fid, track_length, "Q")
+            for image_id, point2D_id in zip(pt.image_ids, pt.point2D_idxs):
+                write_next_bytes(fid, [image_id, point2D_id], "ii")

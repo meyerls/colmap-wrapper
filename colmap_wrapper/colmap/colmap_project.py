@@ -23,7 +23,7 @@ import exiftool
 
 from colmap_wrapper.colmap import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
                                    read_points3d_binary, read_images_binary, generate_colmap_sparse_pc,
-                                   write_images_binary)
+                                   write_images_binary, write_points3D_binary)
 from colmap_wrapper.colmap.bin import read_cameras_text
 
 
@@ -87,7 +87,8 @@ class COLMAPProject(PhotogrammetrySoftware):
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
                  exif_read=False,
                  img_orig: Union[str, Path, None] = None,
-                 output_status_function=None):
+                 output_status_function=None,
+                 oriented: bool = False):
         """
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
@@ -130,7 +131,7 @@ class COLMAPProject(PhotogrammetrySoftware):
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
 
         self.id = project_index
-
+        self.load_depth = True
         self.output_status_function = output_status_function
         if output_status_function:
             self.output_status_function(
@@ -175,6 +176,20 @@ class COLMAPProject(PhotogrammetrySoftware):
         self._fused_path: Path = self._dense_base_path.joinpath(dense_pc)
         self._stereo_path: Path = self._dense_base_path.joinpath('stereo')
         self._depth_image_path: Path = self._stereo_path.joinpath('depth_maps')
+
+        # Check if depth images are in sub folder
+        if len(list(self._depth_image_path.glob('*.bin'))) == 0:
+            if len(list(self._depth_image_path.glob('*'))) == 1:
+                self._depth_image_path = list(self._depth_image_path.glob('*'))[0]
+            else:
+                print('Warning: Multiple depth folders!')
+                max_items = 0
+                for path_i in list(self._depth_image_path.glob('*')):
+                    current_item_len = len(list(path_i.glob('*')))
+                    if current_item_len > max_items:
+                        max_items = current_item_len
+                        self._depth_image_path = path_i
+
         self._normal_image_path: Path = self._stereo_path.joinpath('normal_maps')
 
         self.__project_ini_path: Path = self._project_path / 'sparse' / str(self.id) / 'project.ini'
@@ -190,9 +205,23 @@ class COLMAPProject(PhotogrammetrySoftware):
             if 'cameras' in file_path.name:
                 self._camera_path = file_path
             elif 'images' in file_path.name:
-                self._image_path = file_path
+                if oriented:
+                    if 'oriented' in file_path.name:
+                        self._image_path = file_path
+                else:
+                    if 'oriented' in file_path.name:
+                        continue
+                    self._image_path = file_path
             elif 'points3D' in file_path.name:
-                self._points3D_path = file_path
+                if oriented:
+                    if 'oriented' in file_path.name:
+                        self._points3D_path = file_path
+                else:
+                    if 'oriented' in file_path.name:
+                        continue
+                    self._points3D_path = file_path
+            elif 'transformation' in file_path.name:
+                self._transformation_matrix = np.loadtxt(file_path)
             else:
                 raise ValueError('Unkown file in sparse folder')
 
@@ -217,21 +246,21 @@ class COLMAPProject(PhotogrammetrySoftware):
 
         n_cores = cpu_count()
         executor = ThreadPoolExecutor(max_workers=n_cores)
-        
+
         futures: list = []
-        
+
         futures.append(executor.submit(self.__read_cameras))
         futures.append(executor.submit(self.__read_images))
         futures.append(executor.submit(self.__read_sparse_model))
         futures.append(executor.submit(self.__read_dense_model))
         futures.append(executor.submit(self.__read_depth_structure))
-        
+
         wait(futures)
         futures.clear()
-        
+
         futures.append(executor.submit(self.__add_infos, executor))
         futures.append(executor.submit(self.__read_exif_data))
-        
+
         wait(futures)
         executor.shutdown(wait=True)
 
@@ -316,7 +345,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                         path=next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
 
                     # print(self.images[image_idx].name)
-                    # print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
+                    print(next((p for p in self.depth_path_geometric if self.images[image_idx].name in p), None))
                     # print('\n')
 
                     min_depth, max_depth = np.percentile(self.images[image_idx].depth_image_geometric, [5, 95])
@@ -378,7 +407,7 @@ class COLMAPProject(PhotogrammetrySoftware):
         if self.output_status_function:
             self.output_status_function(LoadElementStatus(element=LoadElement.CAMERAS, project=self, finished=False))
 
-        if list(self._sparse_base_path.glob('*.txt')).__len__() > 0:
+        if (self._sparse_base_path / ('cameras.txt')).exists():
             cameras = read_cameras_text(self._sparse_base_path / 'cameras.txt')
 
             self.cameras = {}
@@ -530,7 +559,7 @@ class COLMAPProject(PhotogrammetrySoftware):
         from colmap_wrapper.colmap import (rotmat2qvec)
         for image_idx in self.images.keys():
             self.images[image_idx].extrinsics = T @ self.images[image_idx].extrinsics
-            self.images[image_idx].qvec = rotmat2qvec(self.images[image_idx].extrinsics[:3, :3].flatten())
+            self.images[image_idx].qvec = rotmat2qvec(self.images[image_idx].extrinsics[:3, :3].T.flatten())
             self.images[image_idx].tvec = -np.dot(-self.images[image_idx].extrinsics[:3, 3],
                                                   -self.images[image_idx].qvec2rotmat().T)
             self.images[image_idx].set_extrinsics()
@@ -539,19 +568,32 @@ class COLMAPProject(PhotogrammetrySoftware):
         self.dense.transform(T)
 
     def transform_sparse(self, T):
-        return NotImplementedError
+        for point_idx in self.sparse.keys():
+            homogeneous_coord = np.hstack([self.sparse[point_idx].xyz, np.asarray([1])])
+            homogeneous_coord = T @ homogeneous_coord
+            self.sparse[point_idx].xyz = (homogeneous_coord / homogeneous_coord[3])[:3]
 
     def transform(self, T):
         self.transform_poses(T)
         self.transform_dense(T)
-        # self.transform_sparse(T)
+        self.transform_sparse(T)
 
     def save(self):
         path_pc = os.path.join(self._dense_base_path, 'fused_oriented.ply')
         o3d.io.write_point_cloud(path_pc, self.dense)
 
+        path_sparse_points = os.path.join(self._sparse_base_path, 'points3D_oriented.bin')
+        write_points3D_binary(self.sparse, path_sparse_points)
+
         path_image = os.path.join(self._sparse_base_path, 'images_oriented.bin')
         write_images_binary(self.images, path_image)
+
+    def save_transform(self, T):
+        '''
+        Info: https://math.stackexchange.com/questions/3846913/finding-the-scale-factor-and-rotation-angle-of-a-matrix
+        '''
+        path_transform = os.path.join(self._sparse_base_path, 'transformation.txt')
+        np.savetxt(path_transform, T)
 
 
 if __name__ == '__main__':

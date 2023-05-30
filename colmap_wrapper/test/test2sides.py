@@ -11,9 +11,10 @@ import numpy as np
 from colmap_wrapper.data.download import Dataset
 from colmap_wrapper.colmap.colmap import COLMAP
 from colmap_wrapper.visualization import ColmapVisualization
+from colmap_wrapper import USER_NAME
 
 if __name__ == '__main__':
-    project = COLMAP(project_path='/media/se86kimy/Samsung_T5/For5G/reco/23_03_17/03', dense_pc='fused.ply')
+    project = COLMAP(project_path='/media/{}/Samsung_T5/For5G/reco/23_03_17/03'.format(USER_NAME), dense_pc='fused.ply')
 
     colmap_project = project.project
 

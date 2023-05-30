@@ -4,19 +4,26 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 
 
-class GPSVis(object):
+class GPSVisualization(object):
     """
-        Class for GPS data visualization using pre-downloaded OSM map in image format.
-        Source: https://github.com/tisljaricleo/GPS-visualization-Python
+    Class for GPS data visualization using pre-downloaded OSM map in image format.
+    Source: https://github.com/tisljaricleo/GPS-visualization-Python
     """
 
-    def __init__(self, gps_data, map_path, points):
+    def __init__(self, gps_data: dict, map_path: str, points: tuple):
         """
-        :param gps_data: Raw gps data.
-        :param map_path: Path to pre-downloaded OSM map in image format.
-        :param points: Upper-left, and lower-right GPS points of the map (lat1, lon1, lat2, lon2).
+        Initialize the GPSVisualization class.
+
+        Args:
+            gps_data (dict): Raw GPS data.
+            map_path (str): Path to pre-downloaded OSM map in image format.
+            points (tuple): Upper-left and lower-right GPS points of the map (lat1, lon1, lat2, lon2).
         """
-        self.gps_data = gps_data
+        gps_data_osm = []
+        for key in gps_data.keys():
+            gps_data_osm.extend(gps_data[key])
+
+        self.gps_data = gps_data_osm
         self.points = points
         self.map_path = map_path
 
@@ -24,18 +31,25 @@ class GPSVis(object):
         self.x_ticks = []
         self.y_ticks = []
 
-    def plot_map(self, output='save', save_as='resultMap.png', show=False):
+    def plot_map(self, output: str = 'save', save_as: str = 'resultMap.png', show: bool = False):
         """
-        Method for plotting the map. You can choose to save it in file or to plot it.
-        :param output: Type 'plot' to show the map or 'save' to save it.
-        :param save_as: Name and type of the resulting image.
-        :return:
+        Plot or save the map image.
+
+        Args:
+            output (str, optional): Type 'plot' to show the map or 'save' to save it. Default is 'save'.
+            save_as (str, optional): Name and type of the resulting image. Default is 'resultMap.png'.
+            show (bool, optional): Whether to show the plotted map. Default is False.
+
+        Returns:
+            None
         """
         self.get_ticks()
         fig, axis1 = plt.subplots(figsize=(30, 30))
         axis1.imshow(self.result_image)
         axis1.set_xlabel('Longitude')
         axis1.set_ylabel('Latitude')
+        axis1.set_xticks(list(self.x_ticks))
+        axis1.set_yticks(list(self.y_ticks))
         axis1.set_xticklabels(self.x_ticks)
         axis1.set_yticklabels(self.y_ticks)
         axis1.grid()
@@ -46,32 +60,39 @@ class GPSVis(object):
 
     def create_image(self, color, width=1):
         """
-        Create the image that contains the original map and the GPS records.
-        :param color: Color of the GPS records.
-        :param width: Width of the drawn GPS records.
-        :return:
+        Create an image with the original map and GPS records.
+
+        Args:
+            color (tuple): Color of the GPS records (RGB values).
+            width (int, optional): Width of the drawn GPS records. Default is 1.
+
+        Returns:
+            None
         """
-        #data = pd.read_csv(self.data_path, names=['LATITUDE', 'LONGITUDE'], sep=',')
+        # data = pd.read_csv(self.data_path, names=['LATITUDE', 'LONGITUDE'], sep=',')
 
         self.result_image = Image.open(self.map_path, 'r')
         img_points = []
-        #gps_data = tuple(zip(data['LATITUDE'].values, data['LONGITUDE'].values))
+        # gps_data = tuple(zip(data['LATITUDE'].values, data['LONGITUDE'].values))
         for lat, long, eval in self.gps_data:
             x1, y1 = self.scale_to_img((lat, long), (self.result_image.size[0], self.result_image.size[1]))
             img_points.append((x1, y1))
         draw = ImageDraw.Draw(self.result_image)
-        #draw.line(img_points, fill=color, width=width)
+        # draw.line(img_points, fill=color, width=width)
         for point in img_points:
             draw.ellipse((point[0] - width, point[1] - width, point[0] + width, point[1] + width), fill=color)
 
-    def scale_to_img(self, lat_lon, h_w):
+    def scale_to_img(self, lat_lon: tuple, h_w: tuple) -> tuple:
         """
-        Conversion from latitude and longitude to the image pixels.
-        It is used for drawing the GPS records on the map image.
-        :param lat_lon: GPS record to draw (lat1, lon1).
-        :param h_w: Size of the map image (w, h).
-        :return: Tuple containing x and y coordinates to draw on map image.
-        """
+         Convert latitude and longitude to image pixels.
+
+         Args:
+             lat_lon (tuple): GPS record to draw (lat1, lon1).
+             h_w (tuple): Size of the map image (width, height).
+
+         Returns:
+             tuple: x and y coordinates to draw on the map image.
+         """
         # https://gamedev.stackexchange.com/questions/33441/how-to-convert-a-number-from-one-min-max-set-to-another-min-max-set/33445
         old = (self.points[2], self.points[0])
         new = (0, h_w[1])
@@ -85,8 +106,10 @@ class GPSVis(object):
 
     def get_ticks(self):
         """
-        Generates custom ticks based on the GPS coordinates of the map for the matplotlib output.
-        :return:
+        Generate custom ticks based on the GPS coordinates of the map for the matplotlib output.
+
+        Returns:
+            None
         """
         self.x_ticks = map(
             lambda x: round(x, 4),
