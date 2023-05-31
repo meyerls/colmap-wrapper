@@ -1,4 +1,6 @@
 ./colmap_wrapper/test/testGPS.py
+colmap_wrapper/data/bunny_img/*
+colmap_wrapper/reconstruction/test_reco/*
 
 .idea/
 data/

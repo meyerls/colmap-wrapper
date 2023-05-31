@@ -78,11 +78,11 @@ class Dataset:
         else:
             return NON_EXIST
 
-    def download_bunny_dataset(self, output_path: str = os.path.abspath(__file__), overwrite: bool = False):
+    def download_bunny_reco_dataset(self, output_path: str = os.path.abspath(__file__), overwrite: bool = False):
 
         self.url = 'https://faubox.rrze.uni-erlangen.de/dl/fiN75KeHkAB78x3MTexFMu/bunny_reco.zip'
 
-        self.dataset_name ='bunny'
+        self.dataset_name ='bunny_reco'
 
         existence = self.__check_existence(output_directory=output_path, dataset_name=self.dataset_name)
 
@@ -96,9 +96,31 @@ class Dataset:
             os.path.join(self.data_path, self.url.split('/')[-1].split('.zip')[0]))
         return self.file_path
 
+    def download_bunny_images_dataset(self, output_path: str = os.path.abspath(__file__), overwrite: bool = False):
+
+        self.url = 'https://faubox.rrze.uni-erlangen.de/dl/fiWk9gBEZLd8Zkf48S7WNw/bunny_img.zip'
+
+        self.dataset_name ='bunny_images'
+
+        existence = self.__check_existence(output_directory=output_path, dataset_name=self.dataset_name)
+
+        if existence == NON_EXIST:
+            self.filename = download(url=self.url, output_dir=self.data_path, overwrite=overwrite)
+            extract(filename=self.filename, output_dir=self.data_path)
+        else:
+            print('Dataset {} already exists at location {}'.format(self.dataset_name, self.data_path))
+
+        self.file_path = os.path.abspath(
+            os.path.join(self.data_path, self.url.split('/')[-1].split('.zip')[0]))
+        return self.file_path
 
 if __name__ == '__main__':
     downloader = Dataset()
-    downloader.download_bunny_dataset()
+    downloader.download_bunny_reco_dataset()
+
+    print('Saved at {}'.format(downloader.file_path))
+
+    downloader = Dataset()
+    downloader.download_bunny_images_dataset()
 
     print('Saved at {}'.format(downloader.file_path))

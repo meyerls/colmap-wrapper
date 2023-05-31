@@ -48,7 +48,7 @@ class COLMAPReconstruction(object):
                          p.suffix in {".jpg", ".jpeg", ".png", ".ppm"})
         self.projects = {}
         # Define default folders and multiple projects
-        if list(project_files) == 0:
+        if len(list(project_files)) == 0:
             for project_idx, folder in enumerate(self.images_folder.glob("*")):
                 reco_path = Path(output).expanduser().resolve() / str(project_idx)
                 option_path = reco_path / "options"
@@ -288,13 +288,20 @@ class COLMAPReconstruction(object):
 
 if __name__ == '__main__':
     from colmap_wrapper.data.download import *
+    from colmap_wrapper.visualization import ColmapVisualization
+    from colmap_wrapper.dataloader import COLMAPLoader
 
     downloader = Dataset()
-    downloader.download_bunny_dataset()
+    downloader.download_bunny_images_dataset()
 
     reconstruction = COLMAPReconstruction(images=downloader.file_path,
                                           output='./test_reco',
                                           feature_mathing='exhaustive',
-                                          patch_match_max_image_size=4000,
-                                          stereo_fusion_max_image_size=4000)
+                                          patch_match_max_image_size=400,
+                                          stereo_fusion_max_image_size=400)
     reconstruction.run()
+
+    project = COLMAPLoader(project_path=downloader.file_path)
+
+    project_vs = ColmapVisualization(colmap=project, image_resize=0.4)
+    project_vs.visualization(frustum_scale=0.8, image_type='image')
