@@ -7,13 +7,12 @@ See LICENSE file for more information.
 """
 
 # Built-in/Generic Imports
-# ...
+import os
+import urllib.request
 
 # Libs
-import os
 from zipfile import ZipFile
 from tqdm import tqdm
-import urllib.request
 
 # Own modules
 # ...
@@ -82,7 +81,7 @@ class Dataset:
 
         self.url = 'https://faubox.rrze.uni-erlangen.de/dl/fiN75KeHkAB78x3MTexFMu/bunny_reco.zip'
 
-        self.dataset_name ='bunny_reco'
+        self.dataset_name = 'bunny_reco'
 
         existence = self.__check_existence(output_directory=output_path, dataset_name=self.dataset_name)
 
@@ -100,7 +99,7 @@ class Dataset:
 
         self.url = 'https://faubox.rrze.uni-erlangen.de/dl/fiWk9gBEZLd8Zkf48S7WNw/bunny_img.zip'
 
-        self.dataset_name ='bunny_images'
+        self.dataset_name = 'bunny_images'
 
         existence = self.__check_existence(output_directory=output_path, dataset_name=self.dataset_name)
 
@@ -113,6 +112,7 @@ class Dataset:
         self.file_path = os.path.abspath(
             os.path.join(self.data_path, self.url.split('/')[-1].split('.zip')[0]))
         return self.file_path
+
 
 if __name__ == '__main__':
     downloader = Dataset()

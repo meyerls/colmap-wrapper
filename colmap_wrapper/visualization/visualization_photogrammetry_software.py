@@ -174,8 +174,8 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
 if __name__ == '__main__':
     from colmap_wrapper import USER_NAME
 
-    project = COLMAPLoader(project_path='/home/{}/Dropbox/07_data/misc/bunny_data/reco_DocSem2'.format(USER_NAME),
+    project = COLMAPLoader(project_path='/home/{}/Dropbox/07_data/misc/bunny_data/reco'.format(USER_NAME),
                            dense_pc='fused.ply')
 
-    project_vs = ColmapVisualization(colmap=project.project_list[0], image_resize=0.4)
+    project_vs = ColmapVisualization(colmap=project, image_resize=0.4)
     project_vs.visualization(frustum_scale=0.8, image_type='image')
