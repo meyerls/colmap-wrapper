@@ -5,3 +5,4 @@ See LICENSE file for more information.
 """
 
 from colmap_wrapper.reconstruction.recunstruction import COLMAPReconstruction
+from colmap_wrapper.reconstruction.camera_config import *

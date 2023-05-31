@@ -21,13 +21,26 @@ from colmap_wrapper.gps.registration import GPSRegistration
 
 
 class COLMAPLoader(GPSRegistration):
-    def __init__(self, project_path: str,
-                 dense_pc='fused.ply',
+    def __init__(self, project_path: Union[str, Path],
+                 dense_pc: str = 'fused.ply',
                  bg_color: np.ndarray = np.asarray([1, 1, 1]),
-                 exif_read=False,
+                 exif_read: bool = False,
                  img_orig: Union[str, Path, None] = None,
                  output_status_function=None,
                  oriented: bool = False):
+        """
+        Constructor for COLMAPLoader class.
+
+        Args:
+            project_path (Union[str, Path]): Path to the COLMAP project.
+            dense_pc (str): Name of the dense point cloud file.
+            bg_color (np.ndarray): Background color as a NumPy array.
+            exif_read (bool): Flag to indicate whether to read EXIF data.
+            img_orig (Union[str, Path, None]): Path to the original image.
+            output_status_function: Function for displaying status output.
+            oriented (bool): Flag to indicate whether the project is oriented.
+        """
+
         GPSRegistration.__init__(self)
 
         self.exif_read = exif_read
@@ -94,22 +107,37 @@ class COLMAPLoader(GPSRegistration):
 
     @property
     def projects(self):
-        return self.project_list
+        """
+        Get the list of projects.
 
-    @property
-    def project(self):
-        if len(self.project_list) <= 0:
-            return None
-        return self.project_list[0]
+        Returns:
+            List: List of COLMAPProject objects.
+        """
+        return self.project_list
 
     @projects.setter
     def projects(self, projects):
         self.project_list = projects
 
     def fuse_projects(self):
+        """
+        Fuse the projects.
+
+        Returns:
+            NotImplementedError: The function is not implemented yet.
+        """
         return NotImplementedError
 
     def save_project(self, output_path):
+        """
+         Save the project.
+
+         Args:
+             output_path: The output path to save the project.
+
+         Returns:
+             NotImplementedError: The function is not implemented yet.
+         """
         return NotImplementedError
 
 
