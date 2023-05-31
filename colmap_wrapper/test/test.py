@@ -11,7 +11,6 @@ import numpy as np
 from colmap_wrapper.data.download import Dataset
 from colmap_wrapper.dataloader import COLMAPLoader
 from colmap_wrapper.visualization import ColmapVisualization
-from colmap_wrapper import USER_NAME
 
 if __name__ == '__main__':
     downloader = Dataset()
