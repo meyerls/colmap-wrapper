@@ -8,7 +8,10 @@ See LICENSE file for more information.
 # ...
 
 # Libs
-import pycolmap
+try:
+    import pycolmap
+except ModuleNotFoundError:
+    print("Pycolmap is not used!")
 
 
 # Own modules

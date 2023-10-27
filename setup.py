@@ -36,7 +36,7 @@ setuptools.setup(
                       "matplotlib",
                       "tqdm",
                       "wget",
-                      "pycolmap"
+                      #"pycolmap"
                       ],  # external packages as dependencies
     classifiers=[
         'Programming Language :: Python :: 3.8',

@@ -19,7 +19,7 @@ import pathlib as path
 import numpy as np
 
 # Own
-from colmap_wrapper.dataloader.camera import (CAMERA_MODEL_IDS, Camera, ImageInformation, Point3D)
+from colmap_wrapper.dataloader.camera import (CAMERA_MODEL_IDS, Camera, CAMERA_MODEL_NAMES, ImageInformation, Point3D)
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
@@ -33,6 +33,7 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     data = fid.read(num_bytes)
     # Struct unpack return tuple (https://docs.python.org/3/library/struct.html)
     return struct.unpack(endian_character + format_char_sequence, data)
+
 
 def write_next_bytes(fid, data, format_char_sequence, endian_character="<"):
     """pack and write to a binary file.
@@ -52,31 +53,35 @@ def write_next_bytes(fid, data, format_char_sequence, endian_character="<"):
 
 def read_cameras_binary(path_to_model_file):
     """
-    Original C++ Code can be found here: https://github.com/colmap/colmap/blob/dev/src/base/reconstruction.cc
+    see: src/colmap/scene/reconstruction.cc
         void Reconstruction::WriteCamerasBinary(const std::string& path)
         void Reconstruction::ReadCamerasBinary(const std::string& path)
     """
     cameras = {}
     with open(path_to_model_file, "rb") as fid:
-        # First 8 bits contain information about the quantity of different camera models
         num_cameras = read_next_bytes(fid, 8, "Q")[0]
-        for _ in range(num_cameras):  # camera_line_index
-            # Afterwards the 64 bits contain information about a specific camera
-            camera_properties = read_next_bytes(fid, num_bytes=24, format_char_sequence="iiQQ")
+        for _ in range(num_cameras):
+            camera_properties = read_next_bytes(
+                fid, num_bytes=24, format_char_sequence="iiQQ"
+            )
             camera_id = camera_properties[0]
             model_id = camera_properties[1]
             model_name = CAMERA_MODEL_IDS[camera_properties[1]].model_name
             width = camera_properties[2]
             height = camera_properties[3]
             num_params = CAMERA_MODEL_IDS[model_id].num_params
-            # The next  NUM_PARAMS * 8 bits contain information about the camera parameters
-            params = read_next_bytes(fid, num_bytes=8 * num_params,
-                                     format_char_sequence="d" * num_params)
-            cameras[camera_id] = Camera(id=camera_id,
-                                        model=model_name,
-                                        width=width,
-                                        height=height,
-                                        params=np.array(params))
+            params = read_next_bytes(
+                fid,
+                num_bytes=8 * num_params,
+                format_char_sequence="d" * num_params,
+            )
+            cameras[camera_id] = Camera(
+                id=camera_id,
+                model=model_name,
+                width=width,
+                height=height,
+                params=np.array(params),
+            )
         assert len(cameras) == num_cameras
     return cameras
 
@@ -332,7 +337,7 @@ def write_cameras_text(cameras, path):
     with open(path, "w") as fid:
         fid.write(HEADER)
         for _, cam in cameras.items():
-            to_write = [cam.id, cam.model, cam.width, cam.height, *cam.params]
+            to_write = [_, cam.model, cam.width, cam.height, *cam.params]
             line = " ".join([str(elem) for elem in to_write])
             fid.write(line + "\n")
 
@@ -364,6 +369,7 @@ def write_images_text(images, path):
                 points_strings.append(" ".join(map(str, [*xy, point3D_id])))
             fid.write(" ".join(points_strings) + "\n")
 
+
 def write_images_binary(images, path_to_model_file):
     """
     see: src/base/reconstruction.cc
@@ -383,6 +389,7 @@ def write_images_binary(images, path_to_model_file):
             write_next_bytes(fid, len(img.point3D_ids), "Q")
             for xy, p3d_id in zip(img.xys, img.point3D_ids):
                 write_next_bytes(fid, [*xy, p3d_id], "ddq")
+
 
 def write_points3D_text(points3D, path):
     """
@@ -408,6 +415,7 @@ def write_points3D_text(points3D, path):
                 track_strings.append(" ".join(map(str, [image_id, point2D])))
             fid.write(" ".join(track_strings) + "\n")
 
+
 def write_points3D_binary(points3D, path_to_model_file):
     """
     see: src/base/reconstruction.cc
@@ -425,3 +433,21 @@ def write_points3D_binary(points3D, path_to_model_file):
             write_next_bytes(fid, track_length, "Q")
             for image_id, point2D_id in zip(pt.image_ids, pt.point2D_idxs):
                 write_next_bytes(fid, [image_id, point2D_id], "ii")
+
+
+
+def write_cameras_binary(cameras, path_to_model_file):
+    """
+    see: src/colmap/scene/reconstruction.cc
+        void Reconstruction::WriteCamerasBinary(const std::string& path)
+        void Reconstruction::ReadCamerasBinary(const std::string& path)
+    """
+    with open(path_to_model_file, "wb") as fid:
+        write_next_bytes(fid, len(cameras), "Q")
+        for _, cam in cameras.items():
+            model_id = CAMERA_MODEL_NAMES[cam.model].model_id
+            camera_properties = [_, model_id, cam.width, cam.height]
+            write_next_bytes(fid, camera_properties, "iiQQ")
+            for p in cam.params[:4]:
+                write_next_bytes(fid, float(p), "d")
+    return cameras

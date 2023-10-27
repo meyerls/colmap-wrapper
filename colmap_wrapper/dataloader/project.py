@@ -11,10 +11,13 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from multiprocessing import cpu_count
 from enum import Enum
 from pathlib import Path
-from typing import Union
+from typing import Union, Literal
 
 # Libs
-import pycolmap
+try:
+    import pycolmap
+except ModuleNotFoundError:
+    print("Not using pycolmap!")
 import numpy as np
 import open3d as o3d
 import exiftool
@@ -23,7 +26,8 @@ import exiftool
 
 from colmap_wrapper.dataloader import (Camera, Intrinsics, read_array, read_images_text, read_points3D_text,
                                        read_points3d_binary, read_images_binary, generate_colmap_sparse_pc,
-                                       write_images_binary, write_points3D_binary)
+                                       write_images_binary, write_points3D_binary, read_cameras_binary,
+                                       write_images_text, write_points3D_text, write_cameras_text)
 from colmap_wrapper.dataloader.bin import read_cameras_text
 
 
@@ -88,7 +92,9 @@ class COLMAPProject(PhotogrammetrySoftware):
                  exif_read=False,
                  img_orig: Union[str, Path, None] = None,
                  output_status_function=None,
-                 oriented: bool = False):
+                 oriented: bool = False,
+                 load_sparse_only: bool = False,
+                 load_depth: bool = True):
         """
         This is a simple COLMAP project wrapper to simplify the readout of a COLMAP project.
         THE COLMAP project is assumed to be in the following workspace folder structure as suggested in the COLMAP
@@ -131,7 +137,8 @@ class COLMAPProject(PhotogrammetrySoftware):
         PhotogrammetrySoftware.__init__(self, project_path=project_path)
 
         self.id = project_index
-        self.load_depth = True
+        self.load_depth = load_depth
+        self.load_sparse_only = load_sparse_only
         self.output_status_function = output_status_function
         if output_status_function:
             self.output_status_function(
@@ -153,44 +160,50 @@ class COLMAPProject(PhotogrammetrySoftware):
             if self._sparse_base_path.joinpath('0').exists():
                 self._sparse_base_path: Path = self._sparse_base_path.joinpath('0')
 
-            self._dense_base_path = self._project_path.joinpath('dense')
-            if self._dense_base_path.joinpath('0').exists():
-                self._dense_base_path: Path = self._dense_base_path.joinpath('0')
+            if not self.load_sparse_only:
 
-            if not self._dense_base_path.exists():
-                self._dense_base_path: Path = self._project_path
+                self._dense_base_path = self._project_path.joinpath('dense')
+                if self._dense_base_path.joinpath('0').exists():
+                    self._dense_base_path: Path = self._dense_base_path.joinpath('0')
+
+                if not self._dense_base_path.exists():
+                    self._dense_base_path: Path = self._project_path
         elif isinstance(project_path, dict):
             self._project_path: Path = project_path['project_path']
-            if not project_path['dense'].exists():
-                self._dense_base_path: Path = self._project_path
-            else:
-                self._dense_base_path: Path = project_path['dense']
+
+            if not load_sparse_only:
+                if not project_path['dense'].exists():
+                    self._dense_base_path: Path = self._project_path
+                else:
+                    self._dense_base_path: Path = project_path['dense']
             self._sparse_base_path: Path = project_path['sparse']
         else:
             raise ValueError("{}".format(self._project_path))
 
-        # Loads undistorted images
-        self._src_image_path: Path = self._dense_base_path.joinpath('images')
-        if not self._src_image_path.exists():
-            self._src_image_path: Path = self._project_path.joinpath('images')
-        self._fused_path: Path = self._dense_base_path.joinpath(dense_pc)
-        self._stereo_path: Path = self._dense_base_path.joinpath('stereo')
-        self._depth_image_path: Path = self._stereo_path.joinpath('depth_maps')
+        if not self.load_sparse_only:
+            # Loads undistorted images
+            self._src_image_path: Path = self._dense_base_path.joinpath('images')
+            if not self._src_image_path.exists():
+                self._src_image_path: Path = self._project_path.joinpath('images')
+            self._fused_path: Path = self._dense_base_path.joinpath(dense_pc)
+            self._stereo_path: Path = self._dense_base_path.joinpath('stereo')
+            self._depth_image_path: Path = self._stereo_path.joinpath('depth_maps')
 
-        # Check if depth images are in sub folder
-        if len(list(self._depth_image_path.glob('*.bin'))) == 0:
-            if len(list(self._depth_image_path.glob('*'))) == 1:
-                self._depth_image_path = list(self._depth_image_path.glob('*'))[0]
-            else:
-                print('Warning: Multiple depth folders!')
-                max_items = 0
-                for path_i in list(self._depth_image_path.glob('*')):
-                    current_item_len = len(list(path_i.glob('*')))
-                    if current_item_len > max_items:
-                        max_items = current_item_len
-                        self._depth_image_path = path_i
+        if not load_sparse_only:
+            # Check if depth images are in sub folder
+            if len(list(self._depth_image_path.glob('*.bin'))) == 0:
+                if len(list(self._depth_image_path.glob('*'))) == 1:
+                    self._depth_image_path = list(self._depth_image_path.glob('*'))[0]
+                else:
+                    print('Warning: Multiple depth folders!')
+                    max_items = 0
+                    for path_i in list(self._depth_image_path.glob('*')):
+                        current_item_len = len(list(path_i.glob('*')))
+                        if current_item_len > max_items:
+                            max_items = current_item_len
+                            self._depth_image_path = path_i
 
-        self._normal_image_path: Path = self._stereo_path.joinpath('normal_maps')
+            self._normal_image_path: Path = self._stereo_path.joinpath('normal_maps')
 
         self.__project_ini_path: Path = self._project_path / 'sparse' / str(self.id) / 'project.ini'
 
@@ -252,8 +265,9 @@ class COLMAPProject(PhotogrammetrySoftware):
         futures.append(executor.submit(self.__read_cameras))
         futures.append(executor.submit(self.__read_images))
         futures.append(executor.submit(self.__read_sparse_model))
-        futures.append(executor.submit(self.__read_dense_model))
-        futures.append(executor.submit(self.__read_depth_structure))
+        if not self.load_sparse_only:
+            futures.append(executor.submit(self.__read_dense_model))
+            futures.append(executor.submit(self.__read_depth_structure))
 
         wait(futures)
         futures.clear()
@@ -324,16 +338,16 @@ class COLMAPProject(PhotogrammetrySoftware):
                         LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=False, idx=image_idx,
                                           current_id=current_image, max_id=count_images))
 
-                self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
+                # self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
+                self.images[image_idx].path = self._img_orig_path / self.images[image_idx].name
 
-                self.images[image_idx].depth_image_geometric_path = next(
-                    (p for p in self.depth_path_geometric if self.images[image_idx].name in p), None)
-                self.images[image_idx].depth_image_photometric_path = next(
-                    (p for p in self.depth_path_photometric if self.images[image_idx].name in p), None)
+                if not self.load_sparse_only:
+                    self.images[image_idx].depth_image_geometric_path = next(
+                        (p for p in self.depth_path_geometric if self.images[image_idx].name in p), None)
+                    self.images[image_idx].depth_image_photometric_path = next(
+                        (p for p in self.depth_path_photometric if self.images[image_idx].name in p), None)
 
                 self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
-
-                self.images[image_idx].path = self._src_image_path / self.images[image_idx].name
 
                 if self.load_depth:
                     if self.output_status_function:
@@ -366,17 +380,12 @@ class COLMAPProject(PhotogrammetrySoftware):
                             LoadElementStatus(element=LoadElement.DEPTH_IMAGE, project=self, finished=True,
                                               idx=image_idx, current_id=current_image, max_id=count_images))
 
-                else:
-                    self.images[image_idx].depth_image_geometric = None
-                    self.images[image_idx].depth_path_photometric = None
                 # self.images[image_idx].normal_image = self.__read_depth_images
 
                 if self.output_status_function:
                     self.output_status_function(
                         LoadElementStatus(element=LoadElement.IMAGE_INFO, project=self, finished=False, idx=image_idx,
                                           current_id=current_image, max_id=count_images))
-
-                self.images[image_idx].intrinsics = Intrinsics(camera=self.cameras[self.images[image_idx].camera_id])
 
                 # Fixing Strange Error when cy is negative
                 if self.images[image_idx].intrinsics.cx < 0:
@@ -439,10 +448,22 @@ class COLMAPProject(PhotogrammetrySoftware):
                 self.cameras.update({camera_id: camera_params})
 
         else:
-            reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
+            try:
+                reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
+                camera_dict = reconstruction.cameras.items()
+                model_string = 'model_name'
+                camera_id_str = 'camera_id'
+
+            except NameError:
+                cameras_path = (self._sparse_base_path / 'cameras.bin')
+                camera_info = read_cameras_binary(cameras_path.__str__())
+                camera_dict = camera_info.items()
+                model_string = 'model'
+                camera_id_str = 'id'
+
             self.cameras = {}
-            for camera_id, camera in reconstruction.cameras.items():
-                if camera.model_name == 'SIMPLE_RADIAL':
+            for camera_id, camera in camera_dict:
+                if getattr(camera, model_string) == 'SIMPLE_RADIAL':
                     params = np.asarray([camera.params[0],  # fx
                                          camera.params[0],  # fy
                                          camera.params[1],  # cx
@@ -450,7 +471,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                                          camera.params[3]])  # k1
                     # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
 
-                elif camera.model_name == 'PINHOLE':
+                elif getattr(camera, model_string) == 'PINHOLE':
                     params = np.asarray([camera.params[0],  # fx
                                          camera.params[1],  # fy
                                          camera.params[2],  # cx
@@ -460,8 +481,8 @@ class COLMAPProject(PhotogrammetrySoftware):
                 else:
                     raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
 
-                camera_params = Camera(id=camera.camera_id,
-                                       model=camera.model_name,
+                camera_params = Camera(id=getattr(camera, camera_id_str),
+                                       model=getattr(camera, model_string),
                                        width=camera.width,
                                        height=camera.height,
                                        params=params)
@@ -556,7 +577,7 @@ class COLMAPProject(PhotogrammetrySoftware):
             self.output_status_function(LoadElementStatus(element=LoadElement.DENSE_MODEL, project=self, finished=True))
 
     def transform_poses(self, T):
-        from colmap_wrapper.colmap import (rotmat2qvec)
+        from colmap_wrapper.dataloader.utils import (rotmat2qvec)
         for image_idx in self.images.keys():
             self.images[image_idx].extrinsics = T @ self.images[image_idx].extrinsics
             self.images[image_idx].qvec = rotmat2qvec(self.images[image_idx].extrinsics[:3, :3].T.flatten())
@@ -578,15 +599,28 @@ class COLMAPProject(PhotogrammetrySoftware):
         self.transform_dense(T)
         self.transform_sparse(T)
 
-    def save(self):
-        path_pc = os.path.join(self._dense_base_path, 'fused_oriented.ply')
-        o3d.io.write_point_cloud(path_pc, self.dense)
+    def save(self, data_type: Literal['txt', 'bin'] = 'bin', dense: bool = True, appendix: str = '_oriented'):
+        if dense:
+            path_pc = os.path.join(self._dense_base_path, 'fused_oriented.ply')
+            o3d.io.write_point_cloud(path_pc, self.dense)
 
-        path_sparse_points = os.path.join(self._sparse_base_path, 'points3D_oriented.bin')
-        write_points3D_binary(self.sparse, path_sparse_points)
+        if data_type == 'bin':
+            path_sparse_points = os.path.join(self._sparse_base_path, 'points3D{}.bin'.format(appendix))
+            write_points3D_binary(self.sparse, path_sparse_points)
 
-        path_image = os.path.join(self._sparse_base_path, 'images_oriented.bin')
-        write_images_binary(self.images, path_image)
+            path_image = os.path.join(self._sparse_base_path, 'images{}.bin'.format(appendix))
+            write_images_binary(self.images, path_image)
+        elif data_type == 'txt':
+            path_sparse_points = os.path.join(self._sparse_base_path, 'points3D{}.txt'.format(appendix))
+            write_points3D_text(self.sparse, path_sparse_points)
+
+            path_image = os.path.join(self._sparse_base_path, 'images{}.txt'.format(appendix))
+            write_images_text(self.images, path_image)
+
+            path_cameras = os.path.join(self._sparse_base_path, 'cameras{}.txt'.format(appendix))
+            write_cameras_text(self.cameras, path_cameras)
+        else:
+            raise ValueError('Data type -{}- not possible'.format(data_type))
 
     def save_transform(self, T):
         '''

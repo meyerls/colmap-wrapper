@@ -27,7 +27,11 @@ class COLMAPLoader(GPSRegistration):
                  exif_read: bool = False,
                  img_orig: Union[str, Path, None] = None,
                  output_status_function=None,
-                 oriented: bool = False):
+                 oriented: bool = False,
+                 sparse_folder_path: Union[str, Path, bool] = False,
+                 load_sparse_only: bool = False,
+                 load_depth: bool = True
+                 ):
         """
         Constructor for COLMAPLoader class.
 
@@ -52,7 +56,11 @@ class COLMAPLoader(GPSRegistration):
         if '~' in str(self._project_path):
             self._project_path = self._project_path.expanduser()
 
-        self._sparse_base_path = self._project_path.joinpath('sparse')
+        # If sparse folder is parsed as an argument
+        if sparse_folder_path:
+            self._sparse_base_path = Path(sparse_folder_path)
+        else:
+            self._sparse_base_path = self._project_path.joinpath('sparse')
         if not self._sparse_base_path.exists():
             raise ValueError('Colmap project structure: sparse folder (cameras, images, points3d) can not be found')
 
@@ -67,7 +75,7 @@ class COLMAPLoader(GPSRegistration):
                 "dense": self._dense_base_path}})
         else:
             # In case of folder with reconstruction number after sparse (multiple projects) (e.g. 0,1,2)
-            # WARNING: dense folder 0 an1 are not the same as sparse 0 and 1 (ToDO: find out if this is always the case)
+            # WARNING: dense folder 0 an 1 are not the same as sparse 0 and 1 (ToDO: find out if this is always the case)
             # for project_index, sparse_project_path in enumerate(list(self._sparse_base_path.iterdir())):
             #    project_structure.update({project_index: {"sparse": sparse_project_path}})
 
@@ -97,7 +105,9 @@ class COLMAPLoader(GPSRegistration):
                                     exif_read=exif_read,
                                     img_orig=self._img_orig_path,
                                     output_status_function=output_status_function,
-                                    oriented=oriented)
+                                    oriented=oriented,
+                                    load_sparse_only=load_sparse_only,
+                                    load_depth=load_depth)
 
             self.project_list.append(project)
 

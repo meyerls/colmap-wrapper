@@ -12,8 +12,10 @@ from typing import Literal, Union
 from dataclasses import dataclass
 
 # Libs
-import pycolmap
-
+try:
+    import pycolmap
+except ModuleNotFoundError:
+    print("Pycolmap is not used!")
 
 # Own modules
 from colmap_wrapper.reconstruction.camera_config import *

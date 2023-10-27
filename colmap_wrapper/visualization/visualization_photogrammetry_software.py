@@ -163,7 +163,7 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         # opt.show_coordinate_frame = True
         opt.point_size = point_size
         opt.light_on = False
-        opt.line_width = 0.01
+        opt.line_width = 1
         opt.background_color = self.vis_bg_color
 
         viewer.capture_screen_image(filename='./test.png', do_render=True)
