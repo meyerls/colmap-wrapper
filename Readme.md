@@ -21,6 +21,8 @@ Make sure that you have a Python version >=3.8 installed.
 
 This repository is tested on Python 3.8+ and can currently only be installed
 from [PyPi](https://pypi.org/project/colmap-wrapper/).
+uv run pytest
+uv sync
 
  ````bash
 pip install dataloader-wrapper

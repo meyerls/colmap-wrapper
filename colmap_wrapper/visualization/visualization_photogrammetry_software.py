@@ -11,6 +11,7 @@ import open3d as o3d
 import numpy as np
 from tqdm import tqdm
 from typing import Union
+from pathlib import Path
 
 # Libs
 from colmap_wrapper.dataloader import COLMAPLoader, COLMAPProject
@@ -19,7 +20,9 @@ from colmap_wrapper.visualization import draw_camera_viewport
 
 
 class PhotogrammetrySoftwareVisualization(object):
-    def __init__(self, photogrammetry_software: PhotogrammetrySoftware, image_resize: float = 0.3):
+    def __init__(
+        self, photogrammetry_software: PhotogrammetrySoftware, image_resize: float = 0.3
+    ):
         if type(photogrammetry_software) == COLMAPLoader:
             self.photogrammetry_software = photogrammetry_software.project_list
         elif type(photogrammetry_software) == COLMAPProject:
@@ -38,8 +41,12 @@ class PhotogrammetrySoftwareVisualization(object):
 
 
 class ColmapVisualization(PhotogrammetrySoftwareVisualization):
-    def __init__(self, colmap: Union[COLMAPLoader, COLMAPProject], bg_color: np.ndarray = np.asarray([1, 1, 1]),
-                 image_resize: float = 0.3):
+    def __init__(
+        self,
+        colmap: Union[COLMAPLoader, COLMAPProject],
+        bg_color: np.ndarray = np.asarray([1, 1, 1]),
+        image_resize: float = 0.3,
+    ):
         super().__init__(colmap, image_resize=image_resize)
 
         self.vis_bg_color = bg_color
@@ -61,7 +68,9 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
             self.geometries.append(project.get_sparse())
         return True
 
-    def add_colmap_frustums2geometrie(self, frustum_scale: float = 1., image_type: str = 'image'):
+    def add_colmap_frustums2geometrie(
+        self, frustum_scale: float = 1.0, image_type: str = "image"
+    ):
         """
         @param image_type:
         @type frustum_scale: object
@@ -78,37 +87,40 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         for project in self.photogrammetry_software:
             geometries = []
             for image_idx in tqdm(project.images.keys()):
-
-                if image_type == 'image':
+                if image_type == "image":
                     image = project.images[image_idx].getData(self.image_resize)
-                elif image_type == 'depth_geo':
+                elif image_type == "depth_geo":
                     import cv2
+
                     image = project.images[image_idx].depth_image_geometric
                     min_depth, max_depth = np.percentile(image, [5, 95])
                     image[image < min_depth] = min_depth
                     image[image > max_depth] = max_depth
                     image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
                     image = (image / project.max_depth_scaler * 255).astype(
-                        np.uint8)  # TODO max_depth_scaler
+                        np.uint8
+                    )  # TODO max_depth_scaler
                     image = cv2.applyColorMap(image, cv2.COLORMAP_HOT)
-                elif image_type == 'depth_photo':
+                elif image_type == "depth_photo":
                     import cv2
+
                     image = project.images[image_idx].depth_image_photometric
-                    min_depth, max_depth = np.percentile(
-                        image, [5, 95])
+                    min_depth, max_depth = np.percentile(image, [5, 95])
                     image[image < min_depth] = min_depth
                     image[image > max_depth] = max_depth
                     image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
                     image = (image / project.max_depth_scaler_photometric * 255).astype(
-                        np.uint8)  # TODO max_depth_scaler_photometric
+                        np.uint8
+                    )  # TODO max_depth_scaler_photometric
                 else:
-                    raise ValueError('Unknown image type')
+                    raise ValueError("Unknown image type")
 
                 line_set, sphere, mesh = draw_camera_viewport(
                     extrinsics=project.images[image_idx].extrinsics,
                     intrinsics=project.images[image_idx].intrinsics.K,
                     image=image,
-                    scale=frustum_scale)
+                    scale=frustum_scale,
+                )
 
                 geometries.append(mesh)
                 geometries.append(line_set)
@@ -116,15 +128,17 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
 
             self.geometries.extend(geometries)
 
-    def visualization(self,
-                      show_dense: bool = True,
-                      show_sparse: bool = True,
-                      show_frustums: bool = True,
-                      frustum_scale: float = 1.,
-                      point_size: float = 1.,
-                      image_type: str = 'image',
-                      title: str = "Open3D Visualizer",
-                      window_size: tuple = (1920, 1080)):
+    def visualization(
+        self,
+        show_dense: bool = True,
+        show_sparse: bool = True,
+        show_frustums: bool = True,
+        frustum_scale: float = 1.0,
+        point_size: float = 1.0,
+        image_type: str = "image",
+        title: str = "Open3D Visualizer",
+        window_size: tuple = (1920, 1080),
+    ):
         """
         @param frustum_scale:
         @param point_size:
@@ -132,23 +146,29 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         @param title:
         @param window_size:
         """
-        image_types = ['image', 'depth_geo', 'depth_photo']
+        image_types = ["image", "depth_geo", "depth_photo"]
 
         if image_type not in image_types:
-            raise TypeError('image type is {}. Only {} is allowed'.format(image_type, image_types))
+            raise TypeError(
+                "image type is {}. Only {} is allowed".format(image_type, image_types)
+            )
 
         if show_dense:
             self.add_colmap_dense2geometrie()
         if show_sparse:
             self.add_colmap_sparse2geometrie()
         if show_frustums:
-            self.add_colmap_frustums2geometrie(frustum_scale=frustum_scale, image_type=image_type)
+            self.add_colmap_frustums2geometrie(
+                frustum_scale=frustum_scale, image_type=image_type
+            )
         self.start_visualizer(point_size=point_size, title=title, size=window_size)
 
-    def start_visualizer(self,
-                         point_size: float,
-                         title: str = "Open3D Visualizer",
-                         size: tuple = (1920, 1080)):
+    def start_visualizer(
+        self,
+        point_size: float,
+        title: str = "Open3D Visualizer",
+        size: tuple = (1920, 1080),
+    ):
         viewer = o3d.visualization.Visualizer()
         viewer.create_window(window_name=title, width=size[0], height=size[1])
 
@@ -166,16 +186,18 @@ class ColmapVisualization(PhotogrammetrySoftwareVisualization):
         opt.line_width = 0.01
         opt.background_color = self.vis_bg_color
 
-        viewer.capture_screen_image(filename='./test.png', do_render=True)
+        viewer.capture_screen_image(filename="./test.png", do_render=True)
         viewer.run()
         viewer.destroy_window()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from colmap_wrapper import USER_NAME
 
-    project = COLMAPLoader(project_path='/home/{}/Dropbox/07_data/misc/bunny_data/reco'.format(USER_NAME),
-                           dense_pc='fused.ply')
+    project = COLMAPLoader(
+        project_path="/home/{}/Dropbox/07_data/misc/bunny_data/reco".format(USER_NAME),
+        dense_pc="fused.ply",
+    )
 
     project_vs = ColmapVisualization(colmap=project, image_resize=0.4)
-    project_vs.visualization(frustum_scale=0.8, image_type='image')
+    project_vs.visualization(frustum_scale=0.8, image_type="image")
