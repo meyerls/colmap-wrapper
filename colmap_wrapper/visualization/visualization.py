@@ -16,11 +16,8 @@ import open3d as o3d
 from PIL import Image, ImageFont, ImageDraw
 from pyquaternion import Quaternion
 
-# Own modules
-# ...
 
-
-'''
+"""
 # Plot/show text of distance in 3 Reco. Currently not working as text is rotated wrongly. tbd!
 
 pos_text = (self.aruco_corners_3d[0] + (
@@ -40,10 +37,12 @@ pcd_text = text_3d(text='{:.4f} cm'.format(dist*100),
                    direction=dir_vec)
 geometries.append(pcd_text)
 
-'''
+"""
 
 
-def text_3d(text, pos, direction=None, density=10, degree=0.0, font="arial.ttf", font_size=16):
+def text_3d(
+    text, pos, direction=None, density=10, degree=0.0, font="arial.ttf", font_size=16
+):
     """
     Source: https://github.com/isl-org/Open3D/issues/2
 
@@ -57,12 +56,12 @@ def text_3d(text, pos, direction=None, density=10, degree=0.0, font="arial.ttf",
     :return: o3d.geoemtry.PointCloud object
     """
     if direction is None:
-        direction = (0., 0., 1.)
+        direction = (0.0, 0.0, 1.0)
 
     font_obj = ImageFont.truetype(font, font_size * density)
     font_dim = font_obj.getsize(text)
 
-    img = Image.new('RGB', font_dim, color=(255, 255, 255))
+    img = Image.new("RGB", font_dim, color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
     draw.text((0, 0), text, font=font_obj, fill=(0, 0, 0))
     img = np.asarray(img)
@@ -76,8 +75,10 @@ def text_3d(text, pos, direction=None, density=10, degree=0.0, font="arial.ttf",
     raxis = np.cross([0.0, 0.0, 1.0], direction)
     if np.linalg.norm(raxis) < 1e-6:
         raxis = (0.0, 0.0, 1.0)
-    trans = (Quaternion(axis=raxis, radians=np.arccos(direction[2])) *
-             Quaternion(axis=direction, degrees=degree)).transformation_matrix
+    trans = (
+        Quaternion(axis=raxis, radians=np.arccos(direction[2]))
+        * Quaternion(axis=direction, degrees=degree)
+    ).transformation_matrix
     trans[0:3, 3] = np.asarray(pos)
     pcd.transform(trans)
     return pcd
@@ -110,15 +111,17 @@ def create_sphere_mesh(t: np.ndarray, color: list, radius: float) -> list:
     return sphere_list
 
 
-def generate_line_set(points: list, lines: list, color: list) -> o3d.pybind.geometry.LineSet:
-    '''
+def generate_line_set(
+    points: list, lines: list, color: list
+) -> o3d.pybind.geometry.LineSet:
+    """
     Generates a line set of parsed points, with uniform color.
 
     :param points: points of lines
     :param lines: list of connections
     :param color: rgb color ranging between 0 and 1.
     :return:
-    '''
+    """
     colors = [color for i in range(len(lines))]
     line_set = o3d.geometry.LineSet(
         points=o3d.utility.Vector3dVector(points),
@@ -130,20 +133,25 @@ def generate_line_set(points: list, lines: list, color: list) -> o3d.pybind.geom
 
 
 def draw_camera_plane(extrinsics, intrinsics, scale):
-    '''
+    """
     Draw camera/image plane inside the camera frustum.
 
     :param extrinsics:
     :param intrinsics:
     :param scale:
     :return:
-    '''
+    """
 
     # Extrinsic parameters
     R, t = extrinsics[:3, :3], extrinsics[:3, 3]
 
     # intrinsic points
-    fx, fy, cx, cy = intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2]
+    fx, fy, cx, cy = (
+        intrinsics[0, 0],
+        intrinsics[1, 1],
+        intrinsics[0, 2],
+        intrinsics[1, 2],
+    )
 
     # Normalize to 1
     max_norm = max(fx, fy, cx, cy)
@@ -157,33 +165,45 @@ def draw_camera_plane(extrinsics, intrinsics, scale):
     ]
 
     # Define line connections
-    lines = [[0, 1], [1, 2], [2, 3], [3, 0], ]
-    line_set = generate_line_set(points=points_camera_plane,
-                                 lines=lines,
-                                 color=[1, 0, 0])
+    lines = [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 0],
+    ]
+    line_set = generate_line_set(
+        points=points_camera_plane, lines=lines, color=[1, 0, 0]
+    )
 
     return line_set, points_camera_plane
 
 
-def draw_camera_viewport(extrinsics: np.ndarray, intrinsics: np.ndarray, image=None, scale=1) \
-        -> Tuple[
-            o3d.pybind.geometry.LineSet,
-            o3d.pybind.geometry.TriangleMesh,
-            o3d.pybind.geometry.TriangleMesh]:
-    '''
+def draw_camera_viewport(
+    extrinsics: np.ndarray, intrinsics: np.ndarray, image=None, scale=1
+) -> Tuple[
+    o3d.pybind.geometry.LineSet,
+    o3d.pybind.geometry.TriangleMesh,
+    o3d.pybind.geometry.TriangleMesh,
+]:
+    """
 
     :param extrinsics:
     :param intrinsics:
     :param image_path:
     :param scale:
     :return:
-    '''
+    """
 
     # Extrinsic parameters
     R, t = extrinsics[:3, :3], extrinsics[:3, 3]
 
     # intrinsic points
-    fx, fy, cx, cy = intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2]
+    fx, fy, cx, cy = (
+        intrinsics[0, 0],
+        intrinsics[1, 1],
+        intrinsics[0, 2],
+        intrinsics[1, 2],
+    )
 
     # Normalize to 1
     max_norm = max(fx, fy, cx, cy)
@@ -203,30 +223,25 @@ def draw_camera_viewport(extrinsics: np.ndarray, intrinsics: np.ndarray, image=N
 
     # Fill image plane/mesh with image as texture
     if isinstance(image, np.ndarray):
-
         # Create Point Cloud and assign a normal vector pointing in the opposite direction of the viewing normal
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np.asarray(points[1:]))
-        normal_vec = - (np.asarray([0, 0, fx]) @ R.T)
-        pcd.normals = o3d.utility.Vector3dVector(np.tile(normal_vec, (pcd.points.__len__(), 1)))
+        normal_vec = -(np.asarray([0, 0, fx]) @ R.T)
+        pcd.normals = o3d.utility.Vector3dVector(
+            np.tile(normal_vec, (pcd.points.__len__(), 1))
+        )
 
         # Create image plane with image as texture
         plane = o3d.geometry.TriangleMesh()
         plane.vertices = pcd.points
-        plane.triangles = o3d.utility.Vector3iVector(np.asarray([[0, 1, 3],
-                                                                 [1, 2, 3]]))
+        plane.triangles = o3d.utility.Vector3iVector(np.asarray([[0, 1, 3], [1, 2, 3]]))
         plane.compute_vertex_normals()
-        v_uv = np.asarray([[1, 1],
-                           [1, 0],
-                           [0, 1],
-                           [1, 0],
-                           [0, 0],
-                           [0, 1]])
+        v_uv = np.asarray([[1, 1], [1, 0], [0, 1], [1, 0], [0, 0], [0, 1]])
         plane.triangle_uvs = o3d.utility.Vector2dVector(v_uv)
         plane.triangle_material_ids = o3d.utility.IntVector([0] * 2)
         plane.textures = [o3d.geometry.Image(image)]
     else:
         plane = o3d.geometry.TriangleMesh()
-        print('Blank')
+        print("Blank")
 
     return line_set, sphere, plane
