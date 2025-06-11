@@ -83,9 +83,9 @@ class COLMAP(object):
             project = COLMAPProject(
                 project_path=project_structure[project_index],
                 dense_pc=dense_pc,
-                load_images=load_images,
-                load_depth=load_depth,
-                image_resize=0.4,
+                # load_images=load_images,
+                # load_depth=load_depth,
+                # image_resize=0.4,
                 bg_color=bg_color,
                 exif_read=self.exif_read,
             )
