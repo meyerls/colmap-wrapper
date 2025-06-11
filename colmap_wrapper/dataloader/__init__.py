@@ -15,6 +15,7 @@ from colmap_wrapper.dataloader.project import *
 
 ## Deprecated
 from pathlib import Path
+import numpy as np
 
 
 class COLMAP(object):
