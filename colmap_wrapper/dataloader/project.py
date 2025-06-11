@@ -428,7 +428,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                                          0])  # k1
 
                 else:
-                    raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
+                    raise NotImplementedError('Model {} is not implemented!'.format(camera.model.name))
 
                 camera_params = Camera(id=camera.id,
                                        model=camera.model,
@@ -442,7 +442,7 @@ class COLMAPProject(PhotogrammetrySoftware):
             reconstruction = pycolmap.Reconstruction(self._sparse_base_path)
             self.cameras = {}
             for camera_id, camera in reconstruction.cameras.items():
-                if camera.model_name == 'SIMPLE_RADIAL':
+                if camera.model.name == 'SIMPLE_RADIAL':
                     params = np.asarray([camera.params[0],  # fx
                                          camera.params[0],  # fy
                                          camera.params[1],  # cx
@@ -450,7 +450,7 @@ class COLMAPProject(PhotogrammetrySoftware):
                                          camera.params[3]])  # k1
                     # cv2.getOptimalNewCameraMatrix(camera.calibration_matrix(), [k, 0, 0, 0], (camera.width, camera.height), )
 
-                elif camera.model_name == 'PINHOLE':
+                elif camera.model.name == 'PINHOLE':
                     params = np.asarray([camera.params[0],  # fx
                                          camera.params[1],  # fy
                                          camera.params[2],  # cx
@@ -458,10 +458,10 @@ class COLMAPProject(PhotogrammetrySoftware):
                                          0])  # k1
 
                 else:
-                    raise NotImplementedError('Model {} is not implemented!'.format(camera.model_name))
+                    raise NotImplementedError('Model {} is not implemented!'.format(camera.model.name))
 
                 camera_params = Camera(id=camera.camera_id,
-                                       model=camera.model_name,
+                                       model=camera.model.name,
                                        width=camera.width,
                                        height=camera.height,
                                        params=params)
